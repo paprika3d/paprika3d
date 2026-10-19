@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/paprika3d/paprika3d",
+  "public_key": "pk_o46SDzSH2Fa3kL2sbWFA3",
   "projectTitle": "paprika3D (three.js game testing for coding agents)",
   "description": "Claude Code plugin and MCP server that lets a coding agent open, look at, play, measure and fix the three.js, React Three Fiber and WebGL pages it builds, in headless Chrome on a paused, seeded clock. Tools: game_open, game_look, game_act, game_observe, game_eval, game_clock, game_feel, game_perf, game_optimize, game_contract, game_check.",
   "folders": ["skills"],
