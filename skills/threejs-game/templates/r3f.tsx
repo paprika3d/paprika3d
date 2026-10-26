@@ -26,20 +26,21 @@ function step(dt: number) {
 
 // One input path for real keys and the harness's act().
 const act = ({ key, down = true }: { key: string; down?: boolean }) => { if (down) held.add(key); else held.delete(key); };
-addEventListener('keydown', e => act({ key: e.key }));
-addEventListener('keyup', e => act({ key: e.key, down: false }));
+addEventListener('keydown', e => act({ key: e.code }));
+addEventListener('keyup', e => act({ key: e.code, down: false }));
 
 const copy = (v: Vec) => ({ x: +v.x.toFixed(3), y: +v.y.toFixed(3) });
 // Installed from the Canvas's onCreated, not here: the harness starts stepping frames once __game exists, and before
 // the Canvas has mounted those frames would draw nothing and run no useFrame.
 const bridge = {
+  subject: 'player',   // the mesh named 'player' below, which `look` and `interact`'s Motion line follow
   describe: () => ({ name: 'coin collector', stack: 'react-three-fiber', keys: { ArrowLeft: 'hold', ArrowRight: 'hold', ArrowUp: 'hold', ArrowDown: 'hold' } }),
   observe: () => ({ score: game.score, player: copy(game.player), coin: copy(game.coin) }),
   act,
   setState: (s: Partial<typeof game>) => {   // every schema key, applied at once
     if (s.score !== undefined) game.score = s.score;
-    if (s.player) game.player = { ...s.player };
-    if (s.coin) game.coin = { ...s.coin };
+    if (s.player) game.player = { ...game.player, ...s.player };   // fields left out keep their values
+    if (s.coin) game.coin = { ...game.coin, ...s.coin };
   },
 };
 
@@ -54,7 +55,7 @@ function Scene() {
   return (
     <>
       <hemisphereLight args={['#ffffff', '#334455', 2]} />
-      {/* names show in game_look's on-screen list */}
+      {/* names show in `look`'s on-screen list */}
       <mesh ref={player} name="player"><boxGeometry args={[0.8, 0.8, 0.8]} /><meshStandardMaterial color="orange" /></mesh>
       <mesh ref={coin} name="coin"><sphereGeometry args={[0.3]} /><meshStandardMaterial color="gold" /></mesh>
     </>

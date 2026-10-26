@@ -7,12 +7,13 @@
 // not count as holes: an open-addressing hash over the integer triple (a string key only when one leaves int32), and
 // edges counted in runs of one sorted Float64Array, 2-3x faster than a string per vertex and an array per edge. It
 // reads attribute arrays through getX/getY/getZ (which also covers interleaved attributes) and imports nothing from
-// three, so it works on bundled pages too. The result is tagged kind: "stats" for game_eval.
+// three, so it works on bundled pages too. The result is tagged kind: "stats" for `eval`.
 (() => {
   const h = window.__harness;
   const r = (v) => Math.round(v * 1000) / 1000;
   const ID = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
   const tris = (g) => Math.floor((g.index ? g.index.count : g.attributes.position?.count ?? 0) / 3);
+  h.tris = tris; // `perf { costs }` counts triangles as stats() does (perf.ts COSTS)
 
   // shortcut: groups and drawRange are ignored (the whole index is one surface), and skinned or morphed meshes are
   // measured in their rest pose; upgrade when an agent needs a sub-range or a posed mesh measured.

@@ -1,6 +1,9 @@
-# Procedural geometry: three.js plus geo.js
+# Procedural geometry: three.js plus geo
 
-`game_open` puts `geo.js` in the project root. It holds Manifold (exact booleans, hull, extrude, revolve, level sets, smoothing) with three.js helpers, and a seeded `scatter`. Never read or edit it.
+Manifold (exact booleans, hull, extrude, revolve, level sets, smoothing) with three.js helpers, and a seeded `scatter`, in two places:
+
+- **`model_run`**, the modelling scene the server keeps between calls: `THREE`, `scene`, `geo` (started), `scatter`, `find`, `stats`, `save`, `load` and `clear` are in scope, so the recipes below run there without their import lines, `const { Manifold, toGeometry } = geo` in place of `await geo()`. `model_look` shows the result from four sides with each mesh's measurements, and `save("assets/<name>.glb", find("<name>"))` puts it in the project with the line that loads it.
+- **The game's page**, for geometry the game makes while it runs: the `open` tool puts `geo.js` in the project root. Never read or edit it.
 
 ```js
 import * as THREE from "three";
@@ -13,7 +16,7 @@ const { Manifold, CrossSection, toManifold, toGeometry, boolean } = await geo();
 - `scatter(target, geometry, material, count, { seed, scale: [min, max], align })` returns an InstancedMesh in `target`'s local space, so add it to `target`.
 - Manifold is Z-up and its angles are degrees: `.rotate([-90, 0, 0])` turns its Z into three's Y.
 
-After each step, name the mesh and check it with `game_eval`: `return stats("wall")` gives triangles, `closed`, volume and genus (a hole through the part adds 1). Try a step in `game_eval` first when unsure, then write it into the source. Once the numbers are right, `game_look` with `target: "wall"` shows it alone from four sides in one picture, which catches a shape that only looks right from the game's camera.
+After each step, name the mesh and check it: `return stats("wall")` (in `model_run`, or `eval` on the page) gives triangles, `closed`, volume and genus (a hole through the part adds 1). `model_look` with `object: "wall"`, or `look` with `target: "wall"` on the page, shows it alone from four sides in one picture, which catches a shape that only looks right from the game's camera.
 
 ## Scatter on a surface
 
@@ -121,4 +124,4 @@ for (const c of [ball, rounded, ...corners]) c.delete();
 - `toGeometry` makes smooth normals but keeps edges sharper than 30 degrees hard; pass `{ sharpAngle: 0 }` for facets or `180` to smooth everything.
 - Trust `volume` and `genus` only when `stats` says `closed`; an open mesh's volume means nothing.
 - Pass `scatter` a `seed` (and keep other build randomness seeded) so the layout is the same on every load.
-- Changes made in `game_eval` vanish on reload: write what works into the source.
+- Changes made in `eval` vanish on reload: write what works into the source.

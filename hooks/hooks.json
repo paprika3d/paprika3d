@@ -1,9 +1,8 @@
 {
-  "description": "After file edits, run the project's game contract in the background and wake the agent when the failing keypoints change; refuse edits to game-contract.json.",
+  "description": "After file edits, in the background, rerun the project's saved checks (game-tests.json) and recheck the opened page's fault lines, and wake the agent when the failing checks change or a fault line closes or opens; on the first stop after a game was opened, state once what was never played or looked at and the open fault lines; once per session, say a three.js page written has not been opened.",
   "hooks": {
     "PostToolBatch": [
       {
-        "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
           {
             "type": "command",
@@ -17,18 +16,16 @@
         ]
       }
     ],
-    "PreToolUse": [
+    "Stop": [
       {
-        "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
           {
             "type": "command",
-            "if": "Edit(**/game-contract.json)",
             "command": "node",
             "args": [
-              "${CLAUDE_PLUGIN_ROOT}/hooks/guard.js"
+              "${CLAUDE_PLUGIN_ROOT}/hooks/before-stop.js"
             ],
-            "timeout": 5
+            "timeout": 10
           }
         ]
       }

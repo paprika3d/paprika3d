@@ -1,7 +1,7 @@
 {
   "name": "paprika3d",
-  "version": "0.1.4",
-  "description": "The toolset that makes your coding agent a better three.js developer: it sees, plays, inspects, builds and speeds up the three.js, React Three Fiber and WebGL pages it writes, in headless Chrome on a paused, seeded clock. What is on screen and what never appears, keys in and state out, mesh stats, procedural geometry, frame-time budgets with an optimizer, and a check after every edit.",
+  "version": "0.2.0",
+  "description": "Three.js MCP server and Claude Code plugin: screenshot, play, test and profile the three.js, React Three Fiber and WebGL pages your coding agent builds. paprika3d is the toolset that makes your coding agent a better three.js developer: it sees, plays, inspects, builds and speeds up the pages it writes, in headless Chrome on a paused, seeded clock. What is on screen and what never appears, keys in and state out, mesh stats, procedural geometry, frame-time budgets with an optimizer, and a reminder to run and look at every page it writes.",
   "keywords": [
     "threejs",
     "three.js",
@@ -20,7 +20,7 @@
   "repository": "https://github.com/paprika3d/paprika3d",
   "license": "Apache-2.0",
   "mcpServers": {
-    "paprika3d": {
+    "paprika": {
       "command": "node",
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/src/cli.js",

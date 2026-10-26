@@ -1,66 +1,91 @@
 <!doctype html>
-<!-- Plain three.js template: one page, no build. Arrow keys move a box; touching the coin scores and moves the coin.
-     Needs `bun add three` (the import map points into node_modules). Open it with game_open { url: "index.html" }. Replace the rules, keep the shape:
+<!-- Plain three.js template: one page, no build. Arrow keys move a box over the ground; touching the coin scores and moves the coin.
+     Needs `bun add three` (the import map points into node_modules); the `open` tool puts geo.js (shapes) and fx.js (stage, sound,
+     particles) in the project, so open it with `open { url: "index.html" }`. Replace the rules, keep the shape:
      state in plain variables, step(dt) once per frame, one input path for keys and act(), window.__game at the end. -->
 <html><head><meta charset="utf-8"><title>Game</title>
-<style>html,body{margin:0;background:#111;overflow:hidden}canvas{display:block}</style></head>
+<style>html,body{margin:0;background:#1a2030;overflow:hidden}</style></head>
 <body>
-<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+<div id="hud" style="position:fixed;top:12px;left:16px;color:#fff;font:600 20px system-ui;pointer-events:none">Score 0</div>
+<!-- Rapier: add "@dimforge/rapier3d-compat":"./node_modules/@dimforge/rapier3d-compat/dist/rapier.mjs" to imports, then import RAPIER from '@dimforge/rapier3d-compat'; await RAPIER.init(); -->
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
+import { geo } from './geo.js';
+import { stage, tex, sfx, burst } from './fx.js';
 
 const SPEED = 4;                       // units per second
+const EDGE = { x: 7.5, z: 5.5 };       // the play area; the ground runs well past it, so its edge never shows
+const clamp = (v, e) => Math.max(-e, Math.min(e, v));
 const held = new Set();
+const hud = document.getElementById('hud');
 let score = 0;
-let player = { x: 0, y: 0 }, coin = { x: 3, y: 2 };
+let player = { x: 0, z: 0 }, coin = { x: 2, z: -2 };
 
 function step(dt) {
-  player.x += ((held.has('ArrowRight') ? 1 : 0) - (held.has('ArrowLeft') ? 1 : 0)) * SPEED * dt;
-  player.y += ((held.has('ArrowUp') ? 1 : 0) - (held.has('ArrowDown') ? 1 : 0)) * SPEED * dt;
-  if (Math.hypot(player.x - coin.x, player.y - coin.y) < 0.8) {
-    score++;
-    coin = { x: Math.round(Math.random() * 8 - 4), y: Math.round(Math.random() * 6 - 3) };   // Math.random: the harness seeds it
+  const dx = (held.has('ArrowRight') ? 1 : 0) - (held.has('ArrowLeft') ? 1 : 0);
+  const dz = (held.has('ArrowDown') ? 1 : 0) - (held.has('ArrowUp') ? 1 : 0);   // ArrowUp is away from the camera, -z
+  const len = Math.hypot(dx, dz) || 1;   // a diagonal at SPEED too, not 1.41x
+  player.x += dx / len * SPEED * dt; player.z += dz / len * SPEED * dt;
+  player.x = clamp(player.x, EDGE.x); player.z = clamp(player.z, EDGE.z);
+  if (Math.hypot(player.x - coin.x, player.z - coin.z) < 0.8) {
+    score++; hud.textContent = `Score ${score}`;
+    sfx.play('coin');                  // a synthesized sound, no file
+    sparks.emit(new THREE.Vector3(coin.x, 1.1, coin.z), { count: 24, speed: 3, spread: Math.PI / 2, color: 0xffe14d });   // above the player's box, where the chase camera sees it
+    // the next coin 1.5 to 3 units ahead of the player (away from the camera), so it stays in view; Math.random: the harness seeds it
+    coin = { x: clamp(player.x + Math.random() * 4 - 2, EDGE.x), z: clamp(player.z - 1.5 - Math.random() * 1.5, EDGE.z) };
   }
 }
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 0, 12);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 2));
-const box = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshStandardMaterial({ color: 0xffa040 }));
-box.name = 'player'; scene.add(box);   // names show in game_look's on-screen list
-const gem = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({ color: 0xffe14d }));
-gem.name = 'coin'; scene.add(gem);
+// stage(): tone mapping, sRGB output, a studio environment, a key light with a shadow and a resize handler, in one call
+const { renderer, scene, camera, fit } = stage(document.body, { background: 0x1a2030, ground: false, key: 3 });
+scene.environmentIntensity = 0.4;      // the studio light at full strength washes out the key light's shadows
+const mat = (color) => new THREE.MeshStandardMaterial({ color });
+const grass = tex.noise({ colors: [0x1f5a2e, 0x5a9a4a], scale: 16, seed: 2 }); grass.repeat.set(10, 8);   // seeded canvas texture, tagged sRGB
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 32).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: grass }));
+ground.name = 'ground'; ground.receiveShadow = true; scene.add(ground);
+const box = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), mat(0xffa040));
+box.name = 'player'; box.castShadow = true; scene.add(box);   // names show in `look`'s on-screen list
+const { boolean } = await geo();       // Manifold booleans, hull, extrude, revolve: a coin with a hole cut through it
+const disc = (r, h) => new THREE.CylinderGeometry(r, r, h, 32).rotateX(Math.PI / 2);
+const gem = new THREE.Mesh(boolean('difference', disc(0.35, 0.08), disc(0.12, 0.2)), mat(0xffe14d));
+gem.name = 'coin'; gem.castShadow = true; scene.add(gem);
+const sparks = burst({ max: 100, seed: 1, size: 0.08 }); sparks.name = 'sparks'; scene.add(sparks);
+fit(new THREE.Box3(new THREE.Vector3(-EDGE.x, 0, -EDGE.z), new THREE.Vector3(EDGE.x, 1, EDGE.z)));   // the key light's shadow over the play area
 
 let last = null;
 function loop(now) {
   requestAnimationFrame(loop);
   // elapsed game time, never more than 0.1 s a frame; the first frame counts as one (time before it was the page loading)
-  step(last === null ? 1 / 60 : Math.min((now - last) / 1000, 0.1));
+  const dt = last === null ? 1 / 60 : Math.min((now - last) / 1000, 0.1);
+  step(dt);
+  sparks.update(dt);
   last = now;
-  box.position.set(player.x, player.y, 0);
-  gem.position.set(coin.x, coin.y, 0);
+  box.position.set(player.x, 0.4, player.z);
+  gem.position.set(coin.x, 0.4, coin.z);
+  // above and behind the player, further back on a portrait screen: the view's width is what keeps the coin in it
+  const d = 4.5 / Math.min(1, camera.aspect);
+  camera.position.set(player.x, d, player.z + d); camera.lookAt(box.position);
   renderer.render(scene, camera);
 }
 requestAnimationFrame(loop);
 
 // One input path for real keys and the harness's act().
 const act = ({ key, down = true }) => { if (down) held.add(key); else held.delete(key); };
-addEventListener('keydown', e => act({ key: e.key }));
-addEventListener('keyup', e => act({ key: e.key, down: false }));
+addEventListener('keydown', e => act({ key: e.code }));
+addEventListener('keyup', e => act({ key: e.code, down: false }));
+addEventListener('blur', () => held.clear());   // a key let go in another window never sends keyup here
 
-const copy = (p) => ({ x: +p.x.toFixed(3), y: +p.y.toFixed(3) });
+const copy = (p) => ({ x: +p.x.toFixed(3), z: +p.z.toFixed(3) });
 window.__game = {
-  describe: () => ({ name: 'coin collector', units: 'world units, y up', keys: { ArrowLeft: 'hold to move left', ArrowRight: 'hold to move right', ArrowUp: 'hold to move up', ArrowDown: 'hold to move down' } }),
+  subject: 'player',                   // the object `look` and `interact`'s Motion line follow
+  describe: () => ({ name: 'coin collector', units: 'world units, y up, the player moves in x and z', keys: { ArrowLeft: 'hold to move left', ArrowRight: 'hold to move right', ArrowUp: 'hold to move away (-z)', ArrowDown: 'hold to move nearer (+z)' } }),
   observe: () => ({ score, player: copy(player), coin: copy(coin) }),
   act,
   setState: (s) => {   // every schema key, applied at once
-    if (s.score !== undefined) score = s.score;
-    if (s.player) player = { ...s.player };
-    if (s.coin) coin = { ...s.coin };
+    if (s.score !== undefined) { score = s.score; hud.textContent = `Score ${score}`; }
+    if (s.player) player = { ...player, ...s.player };
+    if (s.coin) coin = { ...coin, ...s.coin };
   },
 };
 </script>

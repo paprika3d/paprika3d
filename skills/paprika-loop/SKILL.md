@@ -1,0 +1,17 @@
+---
+name: paprika-loop
+description: Builds the person's three.js request over a set time (an hour, two hours, an afternoon) from a short brief in paprika-loop/PROMPT.md, which they can change while it runs, in a loop of fresh sessions, each as many improvements as fit, judged against the brief, scored and committed until the time is up. Use on /paprika-loop <request> for <time>, "keep improving this for two hours", or any 3D build the person wants done unattended over a long time.
+---
+
+# Build a three.js page in a loop
+
+The loop is a driver in this plugin, not this session: it runs `claude -p` once per iteration (a builder session that makes as many improvements as fit, then a read-only judge session that scores the page against the brief and writes the next three improvements), commits after each, and keeps the best-scored commit tagged `paprika-loop/best`. Each session starts with a fresh context and reads `paprika-loop/LATEST.md` (the last builder's section and the last judge's verdict, cut from `paprika-loop/PROGRESS.md`, which holds every session's), so a long build never fills one context window. The loop runs until the time is up, also after the page has everything the brief asks for. This session writes the brief and starts the loop.
+
+1. **Write the brief** with the brief phase of `paprika-make` (`${CLAUDE_PLUGIN_ROOT}/skills/paprika-make/SKILL.md`, "The brief"): what the page is, what it must have and the pictures to work from, in that section's shape, written to `paprika-loop/PROMPT.md` in the project's folder (a new empty folder when the person has none). Its numbered `Must have` list is what each judge scores. A project that already has a `BRIEF.md` and no `paprika-loop/PROMPT.md` yet starts from a copy of it; an existing PROMPT.md is the person's and stays as it is. The time is in minutes; a request with no time gets 60.
+2. **Start the driver in the background**, from the project's folder:
+   - an installed plugin: `node ${CLAUDE_PLUGIN_ROOT}/src/cli.js loop --minutes 120 --prompt-file paprika-loop/PROMPT.md`
+   - a clone of the repo (`${CLAUDE_PLUGIN_ROOT}/src/cli.ts` exists): `bun run ${CLAUDE_PLUGIN_ROOT}/src/cli.ts loop --minutes 120 --prompt-file paprika-loop/PROMPT.md`
+   Add `--model <id>` when the person names a model. A scene to rebuild from pictures (photographs or artwork) gets them in `refs/` of the project folder and `--builder-prompt ${CLAUDE_PLUGIN_ROOT}/skills/paprika-loop/builder-scene.md --judge-prompt ${CLAUDE_PLUGIN_ROOT}/skills/paprika-loop/judge-scene.md`. The driver needs `claude` and `git` on PATH and makes a git repository in the folder when there is none.
+3. **Tell the person where to watch, then stop**: `paprika-loop/PROMPT.md` is their brief and theirs to change at any time; a change they ask for in this session is written there, the running session reads the changed lines at its next tool call, and later sessions start from the new text. `paprika-loop/PROGRESS.md` is the agents' notes (one section per session), `paprika-loop/loop.json` the scores, tokens and commits so far (how far along the loop is), and `paprika-loop/REPORT.md` appears when the time is up, with the best commit and `git checkout paprika-loop/best` to see it. Do not wait for the loop, poll it, or build anything yourself in this session: the loop's sessions own the page until it ends.
+
+The same command runs from a terminal without this session.

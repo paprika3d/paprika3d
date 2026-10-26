@@ -4,12 +4,20 @@
   "public_key": "pk_o46SDzSH2Fa3kL2sbWFA3",
   "projectTitle": "paprika3d (three.js MCP server and Claude Code plugin)",
   "description": "Three.js MCP server and Claude Code plugin: screenshot, play, test and profile the three.js, React Three Fiber and WebGL pages your coding agent builds. paprika3d is the toolset that makes your coding agent a better three.js developer, in headless Chrome on a paused, seeded clock.",
-  "folders": ["skills"],
-  "excludeFolders": ["src", "runtime", "geo", "hooks"],
+  "folders": [
+    "skills",
+    "docs"
+  ],
+  "excludeFolders": [
+    "src",
+    "runtime",
+    "geo",
+    "hooks"
+  ],
   "rules": [
-    "After writing or changing a three.js, React Three Fiber or WebGL page, open it with game_open and look at it with game_look before saying it is done.",
-    "Read the Never visible line of game_look: an object far smaller than the scene is at the wrong scale.",
-    "Drive the page with game_act on an exact frame and read the state it returns; step time with game_clock.",
+    "Build a three.js, React Three Fiber or WebGL page whole and as impressive as you can, then run it with the `open` tool and see it with `look`: they make debugging and polishing cheap.",
+    "Read the Never visible line of `look`: an object far smaller than the scene is at the wrong scale.",
+    "Drive the page with `interact` on an exact frame and read the state it returns; a `{ wait }` step steps time.",
     "A game whose rules must be checked exposes window.__game with describe, observe, act and setState, starts playing on load, takes time only from requestAnimationFrame or performance.now and randomness only from Math.random."
   ]
 }

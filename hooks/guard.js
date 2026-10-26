@@ -1,1 +1,0 @@
-import{json as e}from"node:stream/consumers";e(process.stdin).then((t)=>{let o=t?.tool_input?.file_path??t?.tool_input?.notebook_path;if(typeof o==="string"&&/(^|[\\/])game-contract\.json$/.test(o))console.error("game-contract.json is owned by the harness; run game_contract to change it"),process.exit(2)},()=>{});
