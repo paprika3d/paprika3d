@@ -4,10 +4,14 @@ description: How to install paprika3d, the Claude Code plugin and MCP server tha
 ---
 # Install paprika3d
 
+Two commands in Claude Code, one line in any other MCP client. From then on your agent sees, plays and measures every three.js page it writes.
+
 ## Requirements
 
-- Google Chrome. The harness runs the page in a headless instance of it. On Linux or Windows set `PAPRIKA3D_CHROME` to its path.
+- Google Chrome. The harness runs the page in a headless instance of it, found at its usual install path on macOS and Linux, on PATH, or in Playwright's or Puppeteer's cache. Anywhere else, set `PAPRIKA3D_CHROME` to its path. Nothing is downloaded.
 - Node 20.11 or later.
+- For the Claude Code plugin, Claude Code 2.1.118 or later.
+- Optional: Firefox, for `open`'s `browser: "firefox"`; the one installed on the machine is used (or `PAPRIKA3D_FIREFOX`).
 
 ## Claude Code
 
@@ -16,7 +20,7 @@ claude plugin marketplace add paprika3d/paprika3d
 claude plugin install paprika3d@paprika3d
 ```
 
-The plugin adds the paprika3d tools (`open`, `look`, `interact` and the rest), the `threejs-game` skill and the hooks to Claude Code. After installing, ask the agent to build or fix a three.js page: the skill tells it to open and look at the page before saying it is done.
+The plugin adds the [tools](/tools) (`open`, `look`, `interact` and the rest; their full names start `mcp__plugin_paprika3d_paprika__`), the skills and the hooks to Claude Code. After installing, ask the agent to build or fix a three.js page, or start one with `/paprika3d:paprika-make <request>`, which asks a few questions for a short brief first. The `threejs-game` skill, which Claude loads by itself, says what each tool shows.
 
 ## Other agent products
 
@@ -26,7 +30,7 @@ Cursor, Codex, Gemini CLI and any other client that speaks MCP run the server fr
 npx -y paprika3d serve
 ```
 
-Register that command as a stdio MCP server in the client's configuration (`"command": "npx", "args": ["-y", "paprika3d", "serve"]`). For the Codex CLI: `codex mcp add paprika -- npx -y paprika3d serve`. The tools are the same; the hooks are a Claude Code feature. To give Cursor, Codex, OpenCode and other agents the `threejs-game` skill too, add it next to the server:
+Register that command as a stdio MCP server in the client's configuration (`"command": "npx", "args": ["-y", "paprika3d", "serve"]`). For the Codex CLI: `codex mcp add paprika -- npx -y paprika3d serve`; for the Gemini CLI: `gemini mcp add paprika npx -y paprika3d serve`. The tools are the same; the hooks and slash commands are Claude Code features. To give Cursor, Codex, OpenCode and other agents the skills too, add them next to the server:
 
 ```bash
 npx skills add paprika3d/paprika3d

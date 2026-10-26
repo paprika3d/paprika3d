@@ -24,7 +24,7 @@ paprika3d does both in its own headless Chrome. The page's clock is paused and s
 
 ## Add the server to your MCP client
 
-paprika3d needs Google Chrome and Node 20.11 or later. In Claude Code, install it as a plugin, which also adds the skill and hooks:
+paprika3d needs Google Chrome and Node 20.11 or later, and the Claude Code plugin needs Claude Code 2.1.118 or later. In Claude Code, install it as a plugin, which also adds the skill and hooks:
 
 ```bash
 claude plugin marketplace add paprika3d/paprika3d

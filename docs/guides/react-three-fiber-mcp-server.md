@@ -24,7 +24,7 @@ paprika3d runs the dev server, loads the page in its own headless Chrome with We
 
 ## Install it
 
-You need Google Chrome and Node 20.11 or later. Claude Code users add the plugin, which brings the skill and hooks with the server:
+You need Google Chrome and Node 20.11 or later. Claude Code users (2.1.118 or later) add the plugin, which brings the skill and hooks with the server:
 
 ```bash
 claude plugin marketplace add paprika3d/paprika3d

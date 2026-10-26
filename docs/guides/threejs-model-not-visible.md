@@ -28,7 +28,7 @@ Checking these by hand means logging bounding boxes, moving the camera, and read
 
 ## Install
 
-paprika3d needs Google Chrome and Node 20.11 or later.
+paprika3d needs Google Chrome and Node 20.11 or later, and the Claude Code plugin needs Claude Code 2.1.118 or later.
 
 ```bash
 claude plugin marketplace add paprika3d/paprika3d
