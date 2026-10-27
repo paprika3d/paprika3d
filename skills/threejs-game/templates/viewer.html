@@ -1,0 +1,81 @@
+<!doctype html>
+<!-- Plain three.js viewer template: one page, no build. A product of named parts under orbit controls; a click on a part
+     changes its variant. Needs `bun add three` (the import map points into node_modules); the `open` tool puts fx.js (stage)
+     in the project, so open it with `open { url: "index.html" }`. Replace the product and its variants, keep the shape:
+     variants in plain variables, one `select` path for real clicks and act(), window.__game at the end with `setState`
+     switching any variant, so `look { sheet }` pictures every one and `interact { mouse: "click" }` picks a part. -->
+<html><head><meta charset="utf-8"><title>Viewer</title>
+<style>html,body{margin:0;background:#e8e8e8;overflow:hidden}</style></head>
+<body>
+<div id="label" style="position:fixed;bottom:16px;left:16px;color:#222;font:500 16px system-ui;pointer-events:none">red seat, oak legs</div>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { stage } from './fx.js';
+
+// the variants: each part's choices in order, so a click cycles through them
+const VARIANTS = { seat: { color: { red: 0xc0392b, black: 0x222222, white: 0xf2f2f2 } }, legs: { trim: { oak: 0xc89b5a, walnut: 0x5b3a21, steel: 0x9aa3ad } } };
+let color = 'red', trim = 'oak', selected = null;
+const label = document.getElementById('label');
+
+// stage(): tone mapping, sRGB output, a studio environment, a key light with a shadow, a shadow-catching ground and a resize handler
+const { renderer, scene, camera, fit } = stage(document.body);
+const product = new THREE.Group(); product.name = 'stool'; scene.add(product);
+const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.12, 48), new THREE.MeshStandardMaterial({ color: VARIANTS.seat.color[color], roughness: 0.6 }));
+seat.name = 'seat'; seat.position.y = 0.56; seat.castShadow = true; product.add(seat);   // names show in `look`'s on-screen list
+const legs = new THREE.Group(); legs.name = 'legs'; product.add(legs);
+const legMat = new THREE.MeshStandardMaterial({ color: VARIANTS.legs.trim[trim], roughness: 0.5 });
+for (const [x, z] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) {
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.52, 16), legMat);
+  leg.position.set(x, 0.26, z); leg.castShadow = true; legs.add(leg);   // their tops sit inside the seat, not on its face (no shared plane to z-fight)
+}
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(fit(product));   // frames the camera on the product and sizes the key light's shadow to it
+
+function apply() {
+  seat.material.color.setHex(VARIANTS.seat.color[color]);
+  legMat.color.setHex(VARIANTS.legs.trim[trim]); legMat.metalness = trim === 'steel' ? 0.8 : 0;
+  label.textContent = `${color} seat, ${trim} legs`;
+}
+// One select path for real clicks and the harness's act(): the next variant of the part's one option.
+const select = (part) => {
+  if (!VARIANTS[part]) return;
+  selected = part;
+  const [key, choices] = Object.entries(VARIANTS[part])[0], names = Object.keys(choices), cur = key === 'color' ? color : trim;
+  const next = names[(names.indexOf(cur) + 1) % names.length];
+  if (key === 'color') color = next; else trim = next;
+  apply();
+};
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('click', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;   // a drag orbits; a click picks
+  ndc.set(e.clientX / innerWidth * 2 - 1, 1 - e.clientY / innerHeight * 2);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObject(product, true)[0];
+  if (hit) select(hit.object === seat ? 'seat' : 'legs');
+});
+
+function loop() {
+  requestAnimationFrame(loop);
+  controls.update();
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(loop);
+
+window.__game = {
+  subject: 'stool',
+  describe: () => ({ name: 'stool configurator', units: 'metres, y up', pointer: 'click a part to change it, drag to orbit', parts: { seat: 'color: red, black, white', legs: 'trim: oak, walnut, steel' } }),
+  observe: () => ({ color, trim, selected }),
+  act: ({ action, part }) => { if (action === 'select') select(part); },
+  setState: (s) => {   // every variant key, applied at once
+    if (s.color !== undefined) color = s.color;
+    if (s.trim !== undefined) trim = s.trim;
+    if (s.selected !== undefined) selected = s.selected;
+    apply();
+  },
+};
+</script>
+</body></html>

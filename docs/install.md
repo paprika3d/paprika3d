@@ -8,7 +8,7 @@ Two commands in Claude Code, one line in any other MCP client. From then on your
 
 ## Requirements
 
-- Google Chrome. The harness runs the page in a headless instance of it, found at its usual install path on macOS and Linux, on PATH, or in Playwright's or Puppeteer's cache. Anywhere else, set `PAPRIKA3D_CHROME` to its path. Nothing is downloaded.
+- Google Chrome. The harness runs the page in a headless instance of it, found at its usual install path on macOS and Linux, on PATH, or in Playwright's or Puppeteer's cache. Anywhere else, set `PAPRIKA3D_CHROME` to its path.
 - Node 20.11 or later.
 - For the Claude Code plugin, Claude Code 2.1.118 or later.
 - Optional: Firefox, for `open`'s `browser: "firefox"`; the one installed on the machine is used (or `PAPRIKA3D_FIREFOX`).

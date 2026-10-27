@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.2 (2026-10-27)
+
+One shorter description on every surface: "Three.js MCP server and Claude Code plugin: screenshot, play, test and
+profile the three.js pages your coding agent builds." The README drops the publish banner, the install commands it
+listed twice, the `window.__game` code and the runtime import (both on the docs site) and the lines about what is never
+sent; what leaves your machine lists what each tool sends. `look`'s Hues line leaves out the one object over half the
+frame, by name, so the other objects' colours show (#178), and `interact`'s Motion line takes its first sample at frame
+1 when no frame has been drawn yet, so a save straight after a reload measures the same run as after a look (#176).
+The `threejs-game` skill gains `templates/viewer.html`, a product viewer of named parts whose click cycles a variant, with
+`observe` and `setState` for each one, and its goal paragraph is in plain sentences. `asset_search`'s `model` input says
+it is optional and what it is sent with.
+
 ## 0.2.1 (2026-10-26)
 
 The public copy for 0.2.0: a new README (the intro reel, the results, install for each agent, the 16 tools with when to

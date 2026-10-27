@@ -20,8 +20,6 @@
   <a href="https://paprika3d.com/media/paprika3d-intro.mp4"><img src="https://paprika3d.com/media/paprika3d-teaser.gif" alt="An 8-second loop from the paprika3d intro reel: a flower burst over a harbour, a yellow-walled Backrooms corridor, a stone figure with a skull at a computer keyboard, a low-poly lighthouse and cottage, a lighthouse on a green sea cliff with two people, and an illustrated PAPRIKA poster. It links to the full 46-second video." width="480"></a>
 </p>
 
-<p align="center"><b>New: publish what your agent makes to <code>&lt;name&gt;.paprika3d.app</code></b> (preview, invite-only).<br>
-  Docs, guides and the tool reference at <a href="https://paprika3d.com/docs">paprika3d.com/docs</a>.</p>
 <!-- /hero -->
 
 ## Install
@@ -30,26 +28,11 @@ Needs Google Chrome and Node 20.11 or later; the Claude Code plugin needs Claude
 
 | Agent | Install |
 |---|---|
-| **Claude Code** (2.1.118+) | `claude plugin marketplace add paprika3d/paprika3d`<br>`claude plugin install paprika3d@paprika3d` |
+| **Claude Code** | `claude plugin marketplace add paprika3d/paprika3d`<br>`claude plugin install paprika3d@paprika3d` |
 | **Codex CLI** | `codex mcp add paprika -- npx -y paprika3d serve` |
 | **Gemini CLI** | `gemini mcp add paprika npx -y paprika3d serve` |
 | **Cursor, VS Code, Windsurf** | `npx -y paprika3d serve` as an MCP server in the client's settings (JSON below) |
 | **Skill only** (any agent) | `npx skills add paprika3d/paprika3d` |
-
-```bash
-# Claude Code: the plugin, with the tools, the skills and the hooks
-claude plugin marketplace add paprika3d/paprika3d
-claude plugin install paprika3d@paprika3d
-
-# Codex CLI: the MCP server
-codex mcp add paprika -- npx -y paprika3d serve
-
-# Gemini CLI: the MCP server
-gemini mcp add paprika npx -y paprika3d serve
-
-# Any agent: the skills alone (the method and its reference files, no tools)
-npx skills add paprika3d/paprika3d
-```
 
 Cursor (`.cursor/mcp.json`), Windsurf and any other MCP client take this entry; VS Code's `.vscode/mcp.json` takes the same entry under `servers` instead of `mcpServers`:
 
@@ -99,11 +82,11 @@ Never visible: ToyCar (0.0338 units, in view)
 
 ## What your agent can finally see
 
-**Three.js MCP server and Claude Code plugin: screenshot, play, test and profile the three.js, React Three Fiber and WebGL pages your coding agent builds.**
+**Three.js MCP server and Claude Code plugin: screenshot, play, test and profile the three.js pages your coding agent builds.**
 
 paprika3d works inside the canvas, with the scene itself. Your agent opens its page on a clock it controls, sees every named object on screen and every one that never appears, presses keys on exact frames and reads the state back, measures each mesh and times the frame against a budget. Every reply is short text with the number that fixes the problem, so the agent fixes it before it hands the page over.
 
-It works on any three.js, React Three Fiber or WebGL page, `WebGPURenderer` included: games, product viewers and configurators, scroll sites, simulations, shader and post-processing demos. Your page needs no changes. paprika3d never captures your screen: every picture is of its own headless page.
+It works on any three.js, React Three Fiber or WebGL page, `WebGPURenderer` included: games, product viewers and configurators, scroll sites, simulations, shader and post-processing demos. Your page needs no changes.
 
 ## What your agent can do with it
 
@@ -120,7 +103,7 @@ It works on any three.js, React Three Fiber or WebGL page, `WebGPURenderer` incl
 
 ### The 16 tools
 
-In Claude Code a tool's full name is `mcp__plugin_paprika3d_paprika__<tool>`; from a project's `.mcp.json` it is `mcp__paprika__<tool>`. `open`, `model_audit`, `model_run` and `model_look` take the project folder as `cwd`. The page tools act on the page `open` opened, picked by its `game` name ("main" when left out), so a subagent opens its own beside the lead's. Calls run one at a time. Every tool's full description: [paprika3d.com/docs/tools](https://paprika3d.com/docs/tools).
+In Claude Code a tool's full name is `mcp__plugin_paprika3d_paprika__<tool>`; from a project's `.mcp.json` it is `mcp__paprika__<tool>`. Every tool's full description: [paprika3d.com/docs/tools](https://paprika3d.com/docs/tools).
 
 | Tool | Reach for it when | What it does |
 |---|---|---|
@@ -157,7 +140,7 @@ The slash commands, automatic skill loading and the hooks are Claude Code featur
 | Hook | What it does for you |
 |---|---|
 | After each batch of edits | Reruns the checks saved with `interact`'s `save` and rechecks the page's `Lighting:` and `Surfaces:` lines on the reloaded page; it speaks only when one starts or stops failing. Once per session it says a three.js page the agent wrote has not been opened |
-| On the first stop | States once the edits never played or looked at and the faults still open; it asks for nothing |
+| On the first stop | States once the edits never played or looked at and the faults still open |
 
 ### The files it puts in your project
 
@@ -168,7 +151,7 @@ The slash commands, automatic skill loading and the hooks are Claude Code featur
 | `game-state.js`, `physics-worker.js` | the agent, as the skill says | Game state in typed arrays with a generated `window.__game`, rewind, and Rapier physics in a worker |
 | `three-runtime.js` | `optimize` | The switches `optimize` keeps, read from `game-runtime.json` |
 
-`open` rewrites `geo.js` and `fx.js` on every open; leave them in place. The skill follows three reference files when it writes a page: `plain.html` (one page, an import map, no build step), `r3f.tsx` (React Three Fiber under Vite) and `rapier.ts` (the `window.__game` bridge for a Rapier world).
+`open` rewrites `geo.js` and `fx.js` on every open; leave them in place.
 
 ## The asset library: over 62,000 ready-made assets
 
@@ -180,7 +163,6 @@ The slash commands, automatic skill loading and the hooks are Claude Code featur
 | PBR textures | 3,545 | CC0 | |
 | HDRI skies | 1,430 | CC0 | |
 
-- Search by words, or by a crop of a picture in the project (`image`, `crop`).
 - `pick` puts the file in `assets/` (`public/assets/` with Vite) and replies with the code that loads it, a model at its real-world size.
 - A CC BY model's credit line goes into `CREDITS.md`, as the licence requires.
 
@@ -212,36 +194,9 @@ paprika3d is built for one job: an agent building a three.js page.
 | Flickering faces found | 75% | 44% |
 | Clean objects correctly passed | 80% | 66% |
 
-Use paprika3d whenever an agent writes or changes a three.js, React Three Fiber or WebGL page.
-
 ## Making a game checkable
 
-Any page works as it is. Add `window.__game` once the page has loaded, and your agent reads and sets the game's exact state:
-
-```js
-window.__game = {
-  describe(),        // a short description: name, controls, units
-  observe(),         // the state, as plain JSON
-  act(input),        // performs one input object: { key, down? } or { action, ...args }
-  setState(partial), // sets any of the schema's keys at once; keys left out keep their values
-};
-// Starts playing on load: no title screen, no click to start.
-// Time comes only from requestAnimationFrame / performance.now (faked, 1/60 s per frame, never more than 0.1 s a frame).
-// Randomness comes only from Math.random (seeded). Keys listen on window and match event.code.
-```
-
-The full rules: `skills/threejs-game/SKILL.md` and [paprika3d.com/docs/convention](https://paprika3d.com/docs/convention).
-
-## The runtime import
-
-Your game needs it only once a check says the frame is over budget. `optimize` then puts `three-runtime.js` in the project and asks for this at the top of the entry file, before the renderer is made:
-
-```js
-import { install } from "./three-runtime.js";
-install();
-```
-
-It does nothing until `optimize` has written `game-runtime.json` (also into `public/` when the project has one); then it runs the switches kept there: `resolution`, `defaults`, `instancing`, `lod` and `dispose`.
+Any page works as it is. Add `window.__game` (`describe`, `observe`, `act` and `setState`) once the page has loaded, and your agent reads and sets the game's exact state: [the convention](https://paprika3d.com/docs/convention).
 
 ## What stays stable
 
@@ -249,13 +204,10 @@ The tool names and their inputs, the skill names, the `paprika3d serve` command 
 
 ## What leaves your machine
 
-- **Nothing** from the tools that work on your page and files, apart from the three.js fetch below.
 - **`look` and `interact`**, when the project has no matching three.js installed, have Chrome fetch that three.js version from `cdn.jsdelivr.net`.
-- **Chrome**, which paprika3d starts, may make its own update and safe-browsing checks to Google; paprika3d sends none of your data there.
-- **`asset_search`** sends your agent's searches (the words, or the crop of a picture it searches by) and what it picks to the asset library at `assets.keeno.dev`; that helps us serve you more relevant assets next time. IP addresses are never stored, only a keyed hash.
-- **`send_feedback`,** only when the agent calls it, sends its text, the last tool call's name, option names and error, the plugin version, OS and Node version, a random install id (kept in `~/.paprika3d/telemetry/id`) and a per-run id; never your code, files or pictures. `DO_NOT_TRACK=1` or `PAPRIKA3D_TELEMETRY=0` turns it off.
+- **`asset_search`** sends your agent's searches (the words, or the crop of a picture it searches by) and what it picks to the asset library at `assets.keeno.dev`.
+- **`send_feedback`,** only when the agent calls it, sends its text, the last tool call's name, option names and error, the plugin version, OS and Node version, a random install id (kept in `~/.paprika3d/telemetry/id`) and a per-run id. `DO_NOT_TRACK=1` or `PAPRIKA3D_TELEMETRY=0` turns it off.
 - **`publish`,** only when you ask: the built project, to host it ([what a publish uploads and records](https://paprika3d.com/docs/publish)).
-- No usage telemetry.
 
 ## Publishing (preview, invite-only)
 
@@ -263,16 +215,15 @@ When you ask, your agent puts the page on a public link, `https://<name>.paprika
 
 ## Where runs go
 
-`<project>/paprika3d/runs/<time>/` holds each run's pictures and `run.json`; `<project>/paprika3d/state.json` holds the last 200 runs and how the hooks reach the running server. Add `paprika3d/` to the project's `.gitignore`.
+Each run's pictures and `run.json` go in `<project>/paprika3d/runs/`; add `paprika3d/` to the project's `.gitignore`.
 
 ## Requirements and limits
 
-- **Google Chrome**, found at its usual install path on macOS and Linux, on PATH, or in Playwright's or Puppeteer's cache; anywhere else, set `PAPRIKA3D_CHROME`. Nothing is downloaded. `open`'s `browser: "firefox"` uses the installed Firefox (or `PAPRIKA3D_FIREFOX`); with no Chrome, a plain open falls back to it.
+- **Google Chrome**, found at its usual install path on macOS and Linux, on PATH, or in Playwright's or Puppeteer's cache; anywhere else, set `PAPRIKA3D_CHROME`. `open`'s `browser: "firefox"` uses the installed Firefox (or `PAPRIKA3D_FIREFOX`); with no Chrome, a plain open falls back to it.
 - **Node 20.11 or later.**
 - **Claude Code 2.1.118 or later** for the plugin: the after-edit hook runs on `PostToolBatch`, which older versions lack.
 - **No GPU needed.** Without one, Chrome draws WebGL in software: every tool works, first frames take seconds, and `open` and `perf` say those frame times are no budget signal.
 - **Headless Chrome:** sizes and pixel ratios are emulated, and no sound plays (the tools report the sounds a page started).
-- **Network:** `asset_search`, `send_feedback` and `publish` need it; every other tool works offline.
 
 ## License
 

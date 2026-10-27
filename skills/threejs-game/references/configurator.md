@@ -1,6 +1,14 @@
 # Product viewers and configurators
 
-A configurator shows one product in many variants (colours, materials, parts). Give the page a `window.__game` whose `setState` switches the variant (`{ color: "red", trim: "oak" }`) and whose `observe()` returns it, so the harness can set each one.
+A configurator shows one product in many variants (colours, materials, parts). Give the page a `window.__game` whose `setState` switches the variant (`{ color: "red", trim: "oak" }`) and whose `observe()` returns it, so the harness can set each one. `templates/viewer.html` is one in full: a product of named parts under `OrbitControls`, a click on a part cycles its variant (a drag orbits), `observe()` returns `{ color, trim, selected }`, and `setState` switches any variant.
+
+## A click on a part
+
+`look` lists each named part with its box in page pixels; a click at the box's centre is the test of that part's hit area, saved as a check:
+
+```json
+{ "steps": [{ "mouse": "click", "x": 640, "y": 380 }], "expect": { "selected": "seat" }, "save": "pick-seat" }
+```
 
 ## Every variant in one picture
 

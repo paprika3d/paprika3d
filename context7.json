@@ -3,7 +3,7 @@
   "url": "https://context7.com/paprika3d/paprika3d",
   "public_key": "pk_o46SDzSH2Fa3kL2sbWFA3",
   "projectTitle": "paprika3d (three.js MCP server and Claude Code plugin)",
-  "description": "Three.js MCP server and Claude Code plugin: screenshot, play, test and profile the three.js, React Three Fiber and WebGL pages your coding agent builds. paprika3d runs them in headless Chrome on a paused, seeded clock and tells the agent what is on screen, what never appears, what each input changed and what a frame costs.",
+  "description": "Three.js MCP server and Claude Code plugin: screenshot, play, test and profile the three.js pages your coding agent builds. It tells the agent what is on screen, what never appears, what each input changed and what a frame costs.",
   "folders": [
     "skills",
     "docs"
