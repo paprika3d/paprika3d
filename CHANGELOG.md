@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.3 (2026-10-27)
+
+`perf { costs: true }`'s table header says which total is which when the reply's first line disagrees with it: the first
+line counts the frame as drawn (the camera's view plus the shadow pass) and the textures on the GPU (the background and
+environment included), the table the main scene's objects (#179). `feel` puts its `State changed during setup` line
+right after the `Watched` line, above the HUD and sound lines that count only the watched frames (#182). The
+`threejs-game` skill's reload list names an `interact` with `save`, which replays from a fresh reload (#180); its Rapier
+paragraph says the project's copy and game-state's worker are separate, so their versions need not match, and which
+file each version ships (#181); and the after-edit hook's recheck is explained once, in `references/lighting.md`, with
+the skill and the server's instructions pointing there.
+
 ## 0.2.2 (2026-10-27)
 
 One shorter description on every surface: "Three.js MCP server and Claude Code plugin: screenshot, play, test and

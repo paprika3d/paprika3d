@@ -1,4 +1,4 @@
-// @paprika3d/game-fx 0.2.2, written by paprika3d's open tool: ship it with the page; each open rewrites it
+// @paprika3d/game-fx 0.2.3, written by paprika3d's open tool: ship it with the page; each open rewrites it
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
 }) : x)(function(x) {
