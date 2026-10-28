@@ -1,6 +1,6 @@
 # Product viewers and configurators
 
-A configurator shows one product in many variants (colours, materials, parts). Give the page a `window.__game` whose `setState` switches the variant (`{ color: "red", trim: "oak" }`) and whose `observe()` returns it, so the harness can set each one. `templates/viewer.html` is one in full: a product of named parts under `OrbitControls`, a click on a part cycles its variant (a drag orbits), `observe()` returns `{ color, trim, selected }`, and `setState` switches any variant.
+A configurator shows one product in many variants (colours, materials, parts). Give the page a `window.__game` whose `setState` switches the variant (`{ color: "red", trim: "oak" }`) and whose `observe()` returns it, so the harness can set each one. `templates/viewer.html` is one in full: a product of named parts under `OrbitControls`, a click on a part cycles its variant (a drag orbits), `observe()` returns `{ color, trim, selected }`, and `setState` switches any variant. It sets `renderer.toneMapping = THREE.NeutralToneMapping` after `stage()`: a swatch and the material it names should read as one colour, and `stage()`'s ACES default mutes and shifts saturated colours.
 
 ## A click on a part
 

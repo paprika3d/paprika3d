@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.4 (2026-10-27)
+
+`templates/viewer.html` sets `NeutralToneMapping` after `stage()`, so a swatch and the material it names read as one
+colour, and `references/configurator.md` says why: `stage()`'s ACES default mutes and shifts saturated colours (#183).
+Reply lines call the person at the page a viewer, never a player: `look`'s `It blends in` and `Dark` lines, `open`'s
+slow-start line, `perf`'s p95 hitch line and the `opening` description (#64); the `threejs-game` skill's first-frame rule
+says a page's own controls or labels over the canvas are not a cover.
+
 ## 0.2.3 (2026-10-27)
 
 `perf { costs: true }`'s table header says which total is which when the reply's first line disagrees with it: the first

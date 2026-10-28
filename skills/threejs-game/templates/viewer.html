@@ -21,6 +21,7 @@ const label = document.getElementById('label');
 
 // stage(): tone mapping, sRGB output, a studio environment, a key light with a shadow, a shadow-catching ground and a resize handler
 const { renderer, scene, camera, fit } = stage(document.body);
+renderer.toneMapping = THREE.NeutralToneMapping;   // a swatch and the material it names read as one colour: stage()'s ACES default mutes and shifts saturated colours
 const product = new THREE.Group(); product.name = 'stool'; scene.add(product);
 const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.12, 48), new THREE.MeshStandardMaterial({ color: VARIANTS.seat.color[color], roughness: 0.6 }));
 seat.name = 'seat'; seat.position.y = 0.56; seat.castShadow = true; product.add(seat);   // names show in `look`'s on-screen list
