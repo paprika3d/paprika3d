@@ -2,6 +2,7 @@
 title: A Playwright alternative for three.js and WebGL pages built by agents
 phrase: playwright alternative for three.js
 description: paprika3d is an MCP server a coding agent uses in place of a hand-written browser script to check a three.js or WebGL page. It returns the scene's named objects, what never appears on screen, the object under each click and the game state as JSON, on a paused clock.
+meta: A Playwright alternative for three.js and WebGL pages: MCP tools that see the scene's objects, play the page on a paused clock and time its frames.
 intent: playwright-alternative-threejs-webgl
 queries:
   - "playwright alternative for three.js"

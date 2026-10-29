@@ -1,0 +1,50 @@
+{
+  "name": "@paprika3d/three-runtime",
+  "version": "0.1.0",
+  "description": "Runtime optimizer layer for three.js games and WebGL pages: resolution scaling, renderer defaults, instancing, LOD and disposal, switched on by paprika3d's `optimize`.",
+  "keywords": [
+    "threejs",
+    "three.js",
+    "webgl",
+    "game",
+    "gamedev",
+    "instancing",
+    "lod",
+    "performance",
+    "optimization",
+    "frame-time",
+    "paprika3d"
+  ],
+  "homepage": "https://paprika3d.com/docs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paprika3d/paprika3d.git"
+  },
+  "author": {
+    "name": "Keeno"
+  },
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun build.ts"
+  },
+  "dependencies": {
+    "@three.ez/instanced-mesh": "^0.3.16"
+  },
+  "peerDependencies": {
+    "three": ">=0.159"
+  }
+}

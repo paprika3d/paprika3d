@@ -2,7 +2,7 @@
 
 Manifold (exact booleans, hull, extrude, revolve, level sets, smoothing) with three.js helpers, and a seeded `scatter`, in two places:
 
-- **`model_run`**, the modelling scene the server keeps between calls: `THREE`, `scene`, `geo` (started), `scatter`, `find`, `stats`, `save`, `load` and `clear` are in scope, so the recipes below run there without their import lines, `const { Manifold, toGeometry } = geo` in place of `await geo()`. `model_look` shows the result from four sides with each mesh's measurements, and `save("assets/<name>.glb", find("<name>"))` puts it in the project with the line that loads it.
+- **`model_run`**, the modelling scene the server keeps between calls: `THREE`, `scene`, `geo` (started), `scatter`, `find`, `stats`, `save`, `load` and `clear` are in scope, so the recipes below run there without their import lines, `const { Manifold, toGeometry } = geo` in place of `await geo()`. It is a modelling scene, as Blender is to a game, apart from the game's page, for a prop, a building, a vehicle or a piece of the set. `model_look` shows the result from the front, right and top at true size against a grid and from three-quarter, with each mesh's triangles, size, whether it is closed, its volume and genus. What the code adds stays for the next call (saved to `paprika3d/model/scene.glb`, so a restart loads it back). `save("assets/<name>.glb", find("<name>"))` puts it in the project and replies with the line that loads it in the game; `load("assets/x.glb")` brings a `.glb` (an `asset_search` pick, a model saved before) into the scene to cut, combine or measure.
 - **The game's page**, for geometry the game makes while it runs: the `open` tool puts `geo.js` in the project root. Never read or edit it.
 
 ```js

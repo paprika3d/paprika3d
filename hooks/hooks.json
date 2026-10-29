@@ -8,6 +8,7 @@
             "type": "command",
             "command": "node",
             "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/start.js",
               "${CLAUDE_PLUGIN_ROOT}/hooks/after-batch.js"
             ],
             "asyncRewake": true,
@@ -23,6 +24,7 @@
             "type": "command",
             "command": "node",
             "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/start.js",
               "${CLAUDE_PLUGIN_ROOT}/hooks/before-stop.js"
             ],
             "timeout": 10

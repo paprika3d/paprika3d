@@ -7,7 +7,14 @@ description: Builds what the person asks for in three.js, React Three Fiber or W
 
 ## The brief
 
-A few questions turn the request into `BRIEF.md`, the file the build is checked against. They go one at a time through the AskUserQuestion tool, each after the last answer so it can build on it, as multiple choice with choices drawn from the request (the tool also takes a typed answer). About four are enough, and one the request already answers is skipped. A request that decides everything, or a person who says to just build it, gets no questions; a session with no person in it (`claude -p`, a `paprika-loop` session) writes the brief from the words it has and asks nothing.
+The work goes in this order, and no page or script file is written before the brief file exists:
+
+1. **The questions**, one at a time (below).
+2. **The references**: the person's own pictures, or, when the request names none, the picks of a reference subagent started before the first question ("Finding pictures", below), which the person confirms.
+3. **The brief file**, `BRIEF.md` (`paprika-loop/PROMPT.md` in a loop), written from the answers and the kept pictures with no more questions.
+4. **The build.**
+
+A few questions turn the request into `BRIEF.md`, the file the build is checked against. They go one at a time through the AskUserQuestion tool, each after the last answer so it can build on it, as multiple choice with choices drawn from the request (the tool also takes a typed answer). About four are enough, and one the request already answers is skipped. A request that decides everything (what it is, what it must have, its controls or what the visitor does, and its pictures), or a person who says to just build it, gets no questions; a request that leaves any of these open gets a question on each, so a detailed request still gets one or two. A session with no person in it, one whose tools do not include AskUserQuestion (a loop's builder or judge session, a plain `claude -p`), writes the brief from the words it has and asks nothing. When AskUserQuestion is there, a person is there to answer it, also in the session that starts a `paprika-loop`.
 
 1. **What it is**, since the kind decides what a viewer judges the page by and what the next question asks: a game; a 3D scene (a place, or a picture rebuilt in 3D); a site, product viewer or configurator; an interactive piece (educational, a simulation, a shader demo).
 2. **What that kind needs:**
@@ -19,10 +26,10 @@ A few questions turn the request into `BRIEF.md`, the file the build is checked 
    | Site, viewer or configurator | the product or content, and what the visitor does |
    | Interactive piece | the concept or what is simulated, who it is for, and what the person controls |
 
-3. **References**: pictures, links or things they like, each with its role (layout, style, mechanics, mood) and whether to match it or take it as inspiration. A reference is inspiration unless the person says match: people who meant a picture as inspiration pushed back hardest when the page was held to it as a target. A person with none picks from pictures found on the web (below).
+3. **References**: pictures, links or things they like, each with its role (layout, style, mechanics, mood) and whether to match it or take it as inspiration. A reference is inspiration unless the person says match: people who meant a picture as inspiration pushed back hardest when the page was held to it as a target. A person with none picks from pictures a subagent finds (below).
 4. **The rest**: what it must have, what to avoid, and anything the person already knows they want. The questions name no device the request does not.
 
-**Finding pictures.** Wikimedia Commons and Openverse answer without a key, with direct image URLs and each picture's licence: `curl -s -A paprika3d 'https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=<words>%20filetype:bitmap&gsrnamespace=6&prop=imageinfo&iiprop=url|extmetadata&iiextmetadatafilter=LicenseShortName&iiurlwidth=1280&format=json'` (each page's `thumburl`, `descriptionurl` and licence) and `curl -s 'https://api.openverse.org/v1/images/?q=<words>&license=cc0,pdm,by,by-sa'` (each result's `url`, `license` and `foreign_landing_url`). Up to about six are downloaded with `curl -sL -A paprika3d -o refs/candidates/<n>.<ext> '<url>'`, the Read tool shows whether each one shows the thing, and the person gets the paths with one line each and an AskUserQuestion (multiSelect) of which to keep. The kept ones become `refs/01.<ext>`, `refs/02.<ext>`, ... and the rest are deleted.
+**Finding pictures.** When the request and the first answer name no pictures (the request alone in a session with no person), a reference subagent starts right then: the Agent tool, `model: "sonnet"`, `run_in_background: true`, with the prompt `Read ${CLAUDE_PLUGIN_ROOT}/skills/paprika-make/refs.md and do what it says. The thing: <what it is, in the person's words>. Folder: <project folder>`. It searches while the other questions are asked, and replies with one line per pick: path, what it shows, licence, source URL. Then one AskUserQuestion call asks which to keep, multiSelect, one option per pick (its path, with what it shows and its licence as the description; four options to a question, so six picks are two questions in the one call). The kept ones become `refs/01.<ext>`, `refs/02.<ext>`, ... and the rest are deleted. A session with no person in it keeps every pick unasked.
 
 **`BRIEF.md`** is short, sits at the project root, and its path is shown to the person:
 
@@ -48,7 +55,7 @@ refs/01.jpg · <layout | style | mechanics | mood> · <inspiration | match> · <
 - **`${CLAUDE_PLUGIN_ROOT}/skills/threejs-game/SKILL.md`** says what each tool shows and holds the rules the tools rely on (the `window.__game` convention, time, randomness, names).
 - **What a finished page has usually been through**: for a game, each control the brief names played with `interact` and the `opening` look, and each button or menu the page shows clicked once with `interact` (a mouse step at its box from the look's `HTML over the canvas:` line); for a site or configurator, the `scroll` look when it scrolls, `perf` with `budget: "site"`, `model_audit` on each model file, and the `viewports` look when the brief names phones or tablets; for a simulation or demo, a `sheet` look over time and `perf`. For every page, the last look's picture against the brief's Must have list; a `Lighting:` or `Surfaces:` line names something a viewer sees.
 - **A model the brief names**: `model_audit` reports its size and triangles, the `open` reply says whether it loaded, and a model at the wrong scale shows in `look`'s "Never visible" line.
-- **Ready-made assets**: `asset_search` finds models (57,183, CC BY or CC0), PBR textures and HDRIs (CC0) in a hosted library, and puts the one picked into the project with its loading code and its credit line; `geo.js` and `fx.js` are the options with nothing to download.
+- **Ready-made assets**: `asset_search` finds models (57,732, CC BY or CC0), PBR textures and HDRIs (CC0) in a hosted library, and puts the one picked into the project with its loading code and its credit line; `geo.js` and `fx.js` are the options with nothing to download.
 
 ## The critic
 

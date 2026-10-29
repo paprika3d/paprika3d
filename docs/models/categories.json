@@ -1,0 +1,2792 @@
+{
+ "about": "The asset-library pages (site/models.ts): one per kind of model, in priority order (a model shows on the first page that chooses it). words/not/types/styles/animated/rigged/license match catalog rows; demand is the threads that show people building with this kind of model in three.js, with views read on 2026-10-28; notes is the page's own text; reject is what the review of the page's thumbnails left out.",
+ "categories": [
+  {
+   "slug": "trees",
+   "noun": "tree",
+   "plural": "trees",
+   "title": "Free tree 3D models for three.js (GLB, CC BY)",
+   "query": "tree",
+   "words": [
+    "tree"
+   ],
+   "not": [
+    "christmas",
+    "family",
+    "treehouse"
+   ],
+   "types": [
+    "tree",
+    "foliage-plant",
+    "environment-scene"
+   ],
+   "demand": [
+    {
+     "title": "Can we create realistic trees with textures in threejs?",
+     "url": "https://discourse.threejs.org/t/can-we-create-realistic-trees-with-textures-in-threejs/37183",
+     "views": 6351,
+     "site": "discourse"
+    },
+    {
+     "title": "Trees? :deciduous_tree:",
+     "url": "https://discourse.threejs.org/t/trees/14559",
+     "views": 6073,
+     "site": "discourse"
+    },
+    {
+     "title": "Seeking optimization tips: big map with trees and rocks",
+     "url": "https://discourse.threejs.org/t/68251",
+     "views": 586,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Most leafy trees here draw their canopy as flat cards cut out by a leaf texture's alpha channel. Give those materials `alphaTest` and `side: THREE.DoubleSide` and leave `transparent` off: alpha testing writes depth, so the leaves need no sorting and stop flickering as the camera turns. The low-poly ones (860 of the 1,536 that pass) are solid shapes in flat colours and need neither.\n\nFor a forest, load one tree and copy each of its meshes into an `InstancedMesh`, one per mesh and material, giving every copy a random turn and a slightly different scale. Hundreds of trees then cost a handful of draw calls. Far from the camera, swap the detailed model for a low-poly stand-in with `THREE.LOD`. Each tree is scaled to its real height (6 m for the median one), which keeps a forest in proportion with a player of human size. Of these, 73 are animated; play their clips through an `AnimationMixer`.",
+   "related": [
+    "palm-trees",
+    "flowers",
+    "plants"
+   ],
+   "reject": {
+    "3c2e0263f391463baf99dc39a8adbc1d": "broken: black garbled fan palm"
+   }
+  },
+  {
+   "slug": "palm-trees",
+   "noun": "palm tree",
+   "plural": "palm trees",
+   "title": "Free palm tree 3D models for three.js (GLB, CC BY)",
+   "query": "palm tree",
+   "words": [
+    "palm"
+   ],
+   "types": [
+    "tree",
+    "foliage-plant"
+   ],
+   "demand": [
+    {
+     "title": "Palms (on a Retrowave road)",
+     "url": "https://discourse.threejs.org/t/7809",
+     "views": 5362,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A palm is a bare trunk under a crown of fronds, and the fronds hold the cost and the trouble. In the textured palms each frond is a card cut out by its texture's alpha: set `alphaTest` on that material and draw both faces with `THREE.DoubleSide`, or the far half of the crown vanishes when seen from below. The low-poly palms (72 of the 144 that pass) use folded strips in flat colour instead.\n\nA row of palms along a road suits an `InstancedMesh` per part. To make the crown sway, patch the material's vertex shader with `onBeforeCompile`, bending each vertex by a sine of time weighted by its world height (apply `modelMatrix` first, since meshopt stores positions quantized to the mesh's bounds): conversion for the web removed each file's node hierarchy and fused fronds drawn with one material into a single mesh, leaving no node per frond to rotate. The median palm stands 8 m tall at real size.",
+   "related": [
+    "trees",
+    "flowers",
+    "plants"
+   ],
+   "reject": {
+    "3c2e0263f391463baf99dc39a8adbc1d": "broken: black render",
+    "20f8a8d5054b4191afb7cf3270dbd586": "broken: garbled dark render",
+    "fc5680053bb54ff6bacae64be12200ad": "broken: black silhouette, not palm tree",
+    "cec4254d14e9443d9f299c6247628ebf": "broken: black untextured render",
+    "93edd857d398408693a4f948222430e9": "broken: garbled black and white",
+    "86622575c8404cb19a8a2867786adc21": "wrong_object: potted houseplant",
+    "6c9787d8d08143d28de8337aee694286": "wrong_object: snow globe island"
+   }
+  },
+  {
+   "slug": "flowers",
+   "noun": "flower",
+   "plural": "flowers",
+   "title": "Free flower 3D models for three.js (GLB, CC BY)",
+   "query": "flower",
+   "words": [
+    "flower"
+   ],
+   "types": [
+    "foliage-plant",
+    "decoration"
+   ],
+   "not": [
+    "pot",
+    "vase"
+   ],
+   "demand": [
+    {
+     "title": "Procedural trees & flowers",
+     "url": "https://discourse.threejs.org/t/procedural-trees-flowers/40797",
+     "views": 5022,
+     "site": "discourse"
+    },
+    {
+     "title": "Mesh transformation problem - flower petals",
+     "url": "https://discourse.threejs.org/t/mesh-transformation-problem-flower-petals/15805",
+     "views": 1421,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Flowers are small: the median one stands 0.5 m high at life size, so frame them for a close, low camera; in a view sized for buildings they shrink to specks. Petals and leaves are thin sheets, often one-sided in the source file; if a petal disappears when seen from behind, set `side: THREE.DoubleSide` on that material. Textured petals with cut-out edges want `alphaTest` as well.\n\nTriangle counts vary widely, with the middle half between 1,670 and 36,700, and a bed of the heavy ones adds up fast. For a flower bed, take a light model, read its meshes (stem, petals and leaves stay apart when they use separate materials) and build one `InstancedMesh` for each, sharing the same instance matrices so the parts stay together; `setColorAt()` then gives every copy its own petal tint from a single material. A bouquet model holds several stems in one mesh, so it makes a centrepiece but scatters poorly. Check a picked file with `model_audit` before planting a hundred.",
+   "related": [
+    "trees",
+    "palm-trees",
+    "plants"
+   ],
+   "reject": {
+    "f3270315074346549abe21f207685441": "broken: black garbled bush",
+    "db1b69851fd449928d36767c4f15502d": "wrong_object: cherry blossom tree",
+    "7141040d03dd47be862414f1e4e23709": "poor: crumpled scan blob",
+    "60622b4148dd45dfa5117622ff521855": "poor: garbled black-white flowers",
+    "b3cdf54936bd481184560a00f4e47bf3": "poor: crude red blobs, unclear flower"
+   }
+  },
+  {
+   "slug": "plants",
+   "noun": "plant",
+   "plural": "plants",
+   "title": "Free plant 3D models for three.js (GLB, CC BY)",
+   "query": "plant",
+   "words": [
+    "plant"
+   ],
+   "types": [
+    "foliage-plant"
+   ],
+   "not": [
+    "power",
+    "factory"
+   ],
+   "demand": [
+    {
+     "title": "[Paid][Remote] Looking for Three.js dev to create generative ecosystem of organisms and plants",
+     "url": "https://discourse.threejs.org/t/paid-remote-looking-for-three-js-dev-to-create-generative-ecosystem-of-organisms-and-plants/51977",
+     "views": 728,
+     "site": "discourse"
+    },
+    {
+     "title": "Plant geometry for large GLTF-based scenes",
+     "url": "https://discourse.threejs.org/t/plant-geometry-for-large-gltf-based-scenes/86354",
+     "views": 148,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Most of these are houseplants and garden plants at real size, many with a pot whose base sits on the origin, so a plant placed at a shelf's top height stands on the shelf. Leaves cut from a texture need `alphaTest` and `THREE.DoubleSide`; broad modelled leaves usually do not.\n\nWhen a scene holds many plants, reuse instead of reloading. Load each file once and place copies with `gltf.scene.clone()`: a clone shares the original's geometry and materials, so extra copies add draw calls but no memory. Past a few dozen copies, an `InstancedMesh` per mesh brings each mesh down to one draw call. Mixed styles look wrong side by side in one room, and this category spans stylized (452), realistic (266) and low-poly (227), so pick from one. A realistic plant with dense foliage can run past the upper quartile of 25,500 triangles; run `model_audit` on it and keep the light ones where many are seen at once.",
+   "related": [
+    "trees",
+    "palm-trees",
+    "flowers"
+   ],
+   "reject": {
+    "3334d0ee349f4a909a7ce0f82ecfc610": "broken: checker texture leaf",
+    "f3270315074346549abe21f207685441": "broken: black garbled bush",
+    "1a61eb5341c04a67a1387cebffc7cec2": "poor: flat translucent petals"
+   }
+  },
+  {
+   "slug": "rocks",
+   "noun": "rock",
+   "plural": "rocks",
+   "title": "Free rock 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "rock",
+   "words": [
+    "rock",
+    "boulder",
+    "stone"
+   ],
+   "types": [
+    "rock-terrain",
+    "environment-scene",
+    "prop",
+    "decoration"
+   ],
+   "not": [
+    "lantern",
+    "statue",
+    "sculpture",
+    "wall",
+    "house",
+    "tower",
+    "bridge",
+    "well",
+    "pillar",
+    "rocket",
+    "ring",
+    "portal",
+    "grave",
+    "gravestone",
+    "tombstone",
+    "tomb",
+    "island",
+    "artifact",
+    "axe",
+    "tool",
+    "figurine",
+    "idol",
+    "stonehenge",
+    "arch",
+    "castle",
+    "temple",
+    "ruins",
+    "fountain",
+    "bench",
+    "table",
+    "sword",
+    "golem",
+    "planet",
+    "moon",
+    "mortar",
+    "pestle",
+    "bowl",
+    "jewel",
+    "necklace",
+    "gem"
+   ],
+   "demand": [
+    {
+     "title": "100K Procedural Rocks, Brutally Optimized",
+     "url": "https://discourse.threejs.org/t/100k-procedural-rocks-brutally-optimized/89578",
+     "views": 708,
+     "site": "discourse"
+    },
+    {
+     "title": "Seeking optimization tips: big map with trees and rocks",
+     "url": "https://discourse.threejs.org/t/68251",
+     "views": 586,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Rocks repeat more than other props, so the work is hiding the repetition. Load several different rocks, then scatter each through an `InstancedMesh` with a random rotation on all three axes and an uneven scale (stretch one axis a little); one rock seen at many angles reads as many rocks. Sink each copy slightly into the ground so no gap shows beneath it: its origin is the bottom of its bounds, so a rock set at ground height merely touches it.\n\nScanned and realistic rocks carry their look in a normal map and a detailed colour texture. Dense ones go past the 37,000 triangles of the upper quartile here, and `model_audit` shows the count and texture sizes before you place hundreds. For physics, give a rock a sphere, box or convex-hull collider, never the render mesh. On a large map, split the scatter into one `InstancedMesh` per area: three.js culls an instanced mesh as a whole, by the sphere around all its instances, so a single map-wide one is drawn every frame.",
+   "related": [
+    "trees",
+    "palm-trees",
+    "flowers"
+   ],
+   "reject": {
+    "dfab2871399941deb4360631b1895bf3": "wrong_object: lattice sphere",
+    "53c0beca3e6a473882731056f922d582": "wrong_object: mushrooms are subject",
+    "52ea645803c344a5bd6e7846abf195da": "wrong_object: floating island",
+    "fd26c536d13947e19f0c742f84f45978": "wrong_object: bread bun",
+    "209090fdec1549ecb074fc620049f0d4": "wrong_object: sarcophagus",
+    "705994fad424435c8e35d8b22ba03ccf": "wrong_object: stone disc artifact",
+    "90c4d3c9a92e4b64a159f0925ecd05ad": "wrong_object: carved tablet",
+    "5977af1f1adc41ee9ef391a59c3093d0": "wrong_object: Aztec sun stone",
+    "b1716c7ef8fb406ca268e53d8555e68a": "wrong_object: stone lantern",
+    "98d80fd411b64641b19aed286aff713a": "wrong_object: stone lantern",
+    "c5546bcb4b0447e3acf0031df9338ff5": "wrong_object: Aztec calendar stone",
+    "5b9b370f1d544f2aab0d7d77c7eceee4": "wrong_object: stone lantern",
+    "6b475ce70edc4399b4364cc36afe3c9a": "wrong_object: stone lantern",
+    "a58c7ccd7e0545e6a9ce9906ff666d28": "wrong_object: stone lantern",
+    "ead44eadeffc4f108537517e9ba34845": "wrong_object: ring",
+    "62a7c61caba8462782b5ed6cf9cf56cd": "wrong_object: portal structure",
+    "42bb88444f244ae3bffaca4ac8ffaae4": "wrong_object: gravestone",
+    "bfd94071302f439485520566ee5228a7": "wrong_object: stone lantern",
+    "11c02feeff9741ac8223fe443d9ab0d5": "wrong_object: stone lantern",
+    "c820670f8cc64049878c89f2a668e78b": "wrong_object: brazier column",
+    "8063692b097e48329a7f78069557f92c": "wrong_object: inkwell",
+    "08854a14a8e44793ae06e014a1ccbd1e": "wrong_object: Christmas pudding",
+    "401b886e04a841bdb545f3b9d950d373": "wrong_object: landscape diorama",
+    "34c9d298c80944329452d8d59b3720c8": "poor: garish blue yellow blob",
+    "f6da60cebbbb4250ad47fe83f50d55bf": "wrong_object: obelisk",
+    "0b4fc56732a34ae5b111a325955ce740": "wrong_object: mine entrance",
+    "f2f4ddd3657542c8a9fd86dcd7a1699c": "wrong_object: garden scene",
+    "281d8ed808c34163a1aaf220e320f285": "wrong_object: skull scene",
+    "97bc8e837a864e7ea47e1c0ba46fd281": "wrong_object: crystal, not rock",
+    "7ccbddf6cad54bca94aa2c08adffac65": "wrong_object: lidded jar",
+    "7806fdb5dfc94f79b1ad91ace548a8b4": "wrong_object: electric guitar",
+    "017dd3daea6248308750a1a3b354ccf8": "wrong_object: lake scene",
+    "c131a12840214149b296b84a9f39ab1d": "wrong_object: oil burner urn",
+    "3c53c3dcd61943e094f9a0ab78aef9f5": "poor: glitchy neon block",
+    "50d026b6fd654a8ea0ef23f11482feda": "wrong_object: pagoda diorama scene",
+    "ecbe0cee1d42478bbf3105de758e5a62": "wrong_object: massage stone burner",
+    "a74793466abc44ce824500e6dcb26097": "broken: garish garbled sphere texture",
+    "fd24b82064454f61898253532a9bd293": "duplicate: burner, matches cell 19",
+    "5ef91e0bfe7b44da9f1d2944386cce85": "wrong_object: stone smoking pipe",
+    "b8a39401e27f4f0d964af5ea5e8efeac": "broken: garbled salt lamp texture",
+    "scn_AeppvCPdcSpBz3DYzxrv3GaU": "wrong_object: gargoyle sculpture"
+   },
+   "inName": true
+  },
+  {
+   "slug": "terrain",
+   "noun": "terrain",
+   "plural": "terrain models",
+   "title": "Free terrain 3D models for three.js (GLB, CC BY)",
+   "query": "terrain",
+   "words": [
+    "terrain",
+    "landscape",
+    "mountain",
+    "cliff"
+   ],
+   "types": [
+    "rock-terrain",
+    "environment-scene"
+   ],
+   "demand": [
+    {
+     "title": "How to make character walk on custom terrain made in Blender?",
+     "url": "https://discourse.threejs.org/t/how-to-make-character-walk-on-custom-terrain-made-in-blender/40503",
+     "views": 2877,
+     "site": "discourse"
+    },
+    {
+     "title": "Dynamic terrain deformation under a polygon / road (GLB terrain ~30k vertices)",
+     "url": "https://discourse.threejs.org/t/dynamic-terrain-deformation-under-a-polygon-road-glb-terrain-30k-vertices/91742",
+     "views": 225,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A terrain model here is a sculpted piece: a hill, a mountain, a valley diorama or a floating landscape, mostly low-poly (102 of the 204 that pass). Real sizes vary a great deal, since some authors modelled a whole mountain at full scale; pick with a `height` to get it in your scene's units, and set the camera's `far` plane to cover it.\n\nTo walk a character over it, cast a ray straight down from above the character each frame with `THREE.Raycaster` against the terrain mesh and set the character's height from the hit point. A raycast tests every triangle, so for a dense terrain add the `three-mesh-bvh` library and call `computeBoundsTree()` on the geometry, which makes each cast cheap. These pieces are closed sculpted scenery, not heightmaps: to deform the ground under a road or a footprint, build that patch as a `PlaneGeometry` whose vertices you can move, and blend it into the model at its edges.",
+   "related": [
+    "trees",
+    "palm-trees",
+    "flowers"
+   ],
+   "reject": {
+    "c6b9a92e244c4f3bb676ddb6b5bde5c3": "wrong_object: single rock",
+    "1fe4ae0ea0cf4d08a4c6b9254033913a": "wrong_object: single rock",
+    "81a0d60ee7334580a6adb9b4b52023fd": "broken: 360 photosphere",
+    "cde6e3836f7a4ac19e361010fc49751e": "wrong_object: bike on island",
+    "scn_5a8d56195aecf2d2": "wrong_object: cutaway building",
+    "63b25c570d3f4cc38700a1d45fd5db78": "wrong_object: planet",
+    "06276d7a8f2044458a363c2ffa2d4620": "wrong_object: planet",
+    "6c02636e70e14808bdc6f313b7100e40": "wrong_object: planet",
+    "73aba2afd14c4bca8972b28139332876": "broken: blank white sphere",
+    "61ef8f3b75214bea8a7c7a264775f39a": "poor: unclear drone-like blob",
+    "52b771bb17c54ec985981e5ab119f5af": "wrong_object: snow globe",
+    "3b9ecef163fe4f299a7baafd585a0216": "duplicate: same as cell 13"
+   }
+  },
+  {
+   "slug": "islands",
+   "noun": "floating island",
+   "plural": "floating islands",
+   "title": "Free floating island 3D models for three.js (GLB, CC BY)",
+   "query": "floating island",
+   "words": [
+    "island"
+   ],
+   "types": [
+    "environment-scene",
+    "rock-terrain",
+    "building"
+   ],
+   "demand": [
+    {
+     "title": "3D Island Dev Portfolio",
+     "url": "https://discourse.threejs.org/t/3d-island-dev-portfolio/58663",
+     "views": 2866,
+     "site": "discourse"
+    },
+    {
+     "title": "Little Island Scene (with Butterflies)",
+     "url": "https://discourse.threejs.org/t/little-island-scene-with-butterflies/38560",
+     "views": 1690,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Islands are whole small scenes in one file: ground, trees, a house, water, sometimes clouds, and 48 of them animated. That suits a portfolio centrepiece or a level's backdrop, less so a repeated prop. Check one with `look` before you light it: many were built to be seen from outside at a three-quarter angle, with no underside, or with a cone of rock beneath a floating base.\n\nPlay the animated ones with an `AnimationMixer`: `mixer.clipAction(gltf.animations[0]).play()`, then `mixer.update(delta)` each frame. A floating island with no animation comes alive with a slow bob, a sine of time added to `position.y`, and a slight turn. Water in these files is usually a flat mesh, opaque or slightly transparent; if it flickers against the shore, it sits too close to the ground beneath it, so raise it a little. Parts with a common material were fused when the file was prepared, so a diorama's draw calls follow how many materials it uses, and `perf` reports them.",
+   "related": [
+    "trees",
+    "palm-trees",
+    "flowers"
+   ],
+   "reject": {
+    "27910a201acb4a109f77baa5c073c7a3": "poor: scattered tiny pieces",
+    "343ca9e44e904869b23d40b30f1f4aae": "duplicate: same as cell 1",
+    "e28598347055419db23d959dfb13a6f3": "broken: dark garbled scene"
+   }
+  },
+  {
+   "slug": "crystals",
+   "noun": "crystal",
+   "plural": "crystals",
+   "title": "Free crystal 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "crystal",
+   "words": [
+    "crystal",
+    "gemstone",
+    "gem",
+    "quartz",
+    "mineral",
+    "amethyst"
+   ],
+   "not": [
+    "ball",
+    "skull",
+    "character",
+    "gun",
+    "revolver",
+    "axe",
+    "ring",
+    "stool",
+    "crab",
+    "tower",
+    "sword",
+    "chest",
+    "lamp",
+    "necklace",
+    "crown",
+    "staff",
+    "glass",
+    "wand",
+    "jewelry",
+    "jewellery"
+   ],
+   "demand": [
+    {
+     "title": "Crystal-like Glass Material effect/Shader",
+     "url": "https://discourse.threejs.org/t/crystal-like-glass-material-effect-shader/69275",
+     "views": 3972,
+     "site": "discourse"
+    },
+    {
+     "title": "Gems rendering service",
+     "url": "https://discourse.threejs.org/t/76484",
+     "views": 1301,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A crystal's look is mostly its material, and GLTFLoader gives these files a `MeshStandardMaterial`, which renders a gem as coloured plastic rather than glass. For glass-like gems, replace it with `MeshPhysicalMaterial` and set `transmission`, `ior`, `thickness` and a low `roughness`. Transmission refracts what lies behind the gem and needs surroundings to show, so give the scene an environment: `PMREMGenerator` turns the `RoomEnvironment` addon into `scene.environment` with no image to load. `flatShading: true` keeps facets crisp on the low-poly gems.\n\nFor a magical glow, raise `emissive` and `emissiveIntensity` and add `UnrealBloomPass` from the postprocessing addons; bloom picks up whatever passes its threshold, so keep the rest of the scene darker. Transmission costs an extra render of the scene each frame, fine for a few hero gems and too much for a cave lined with them, where emissive crystals without transmission do the job. The median crystal is 0.3 m tall, a hand-held size, so a cluster meant to tower over a player needs a `height` at pick time.",
+   "related": [
+    "trees",
+    "palm-trees",
+    "flowers"
+   ],
+   "types": [
+    "decoration",
+    "prop",
+    "rock-terrain",
+    "environment-scene"
+   ],
+   "reject": {
+    "3a1fec1526d442c49fb82fdc3400080b": "poor: crude colored blob",
+    "25617b4723b94665a35c44ed43dd6549": "wrong_object: character",
+    "8a6dfd34db1f438cbf36681c5e8108c6": "broken: garbled chest",
+    "b06e5e5376ec4068a8d1a9a1ca86d4f1": "wrong_object: revolver",
+    "b78024c1c1854288be277a241652ac73": "wrong_object: axe",
+    "5d8de6116ad4494889dd919fd39aa11a": "wrong_object: tower",
+    "7844226f0dc54367bd5fcc1cefed97c4": "wrong_object: crab creature",
+    "8ab0baf0f68f42788285e4f952c454ba": "wrong_object: piano stool",
+    "07aba8b76a8b41b4ba005d2ec733f4a9": "wrong_object: ring",
+    "90c530d464cd4f1ebb3e0d883194bfba": "wrong_object: potted plant",
+    "9e7d0b63c6b047828346755e9ba45ade": "wrong_object: spheres and vines sculpture",
+    "385c7664996b4e20ad21a735d76548db": "poor: grey green cubes not crystal",
+    "08dce57faff44ec582a0b94c3bbed1c6": "duplicate: teal cluster like cell 5"
+   }
+  },
+  {
+   "slug": "planets",
+   "noun": "planet",
+   "plural": "planets",
+   "title": "Free planet 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "planet",
+   "words": [
+    "planet",
+    "moon",
+    "earth"
+   ],
+   "types": [
+    "environment-scene",
+    "sci-fi-tech",
+    "decoration",
+    "rock-terrain"
+   ],
+   "not": [
+    "doll",
+    "dome",
+    "base",
+    "egg",
+    "forest",
+    "city",
+    "station",
+    "kokeshi",
+    "globe",
+    "map"
+   ],
+   "demand": [
+    {
+     "title": "Procedural Planet Generator",
+     "url": "https://discourse.threejs.org/t/procedural-planet-generator/59244",
+     "views": 8142,
+     "site": "discourse"
+    },
+    {
+     "title": "Can't View Planet/Moon GLB Model",
+     "url": "https://discourse.threejs.org/t/cant-view-planet-moon-glb-model/79385",
+     "views": 125,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Many planet files record the real diameter as their height, so a picked Earth can arrive thousands of kilometres across: the camera ends up inside it or the far plane cuts it, and the page shows nothing. That is a frequent reason a planet GLB seems not to load. Pick with a `height` (say 2) to get it in scene units, or scale it yourself, and confirm with `look` that it is in view.\n\nSpin a planet about its own axis with `rotation.y += speed * delta`. For a moon, add it to an empty `Object3D` at the planet's centre and turn that pivot, which makes the moon orbit with no trigonometry. A second sphere slightly larger than the planet, with `side: THREE.BackSide`, additive blending and a blue tint, makes a cheap atmosphere rim. No planet here has a 2048 px map, and close up the surface turns soft; keep the camera at a distance or add a normal map. Of these, 11 are animated, mostly turning in place.",
+   "related": [
+    "trees",
+    "palm-trees",
+    "flowers"
+   ],
+   "reject": {
+    "7c83ec78ba2144aeb7726a688ea2cf19": "wrong_object: kokeshi doll",
+    "a0dab8b3f365475d9891ae5d31eb4d95": "wrong_object: tiny dome structures",
+    "835eb8cb05184a4fa3d55c5c12c46d5e": "wrong_object: egg shell",
+    "2c2c86e580054fc8951050bb0d7275d7": "broken: nearly black sphere",
+    "d12e174cfa7d429dbbdd898fae9fa65b": "duplicate: same as cell 6",
+    "7e0a142dc9c046c394f987b839be20e2": "wrong_object: moon base domes",
+    "849662a96b174440be0f08a68a7cbd87": "wrong_object: forest scene, not planet",
+    "364bbb203c124cd38105bd505bfcf6a0": "wrong_object: decorative box",
+    "7af0f723f1444ef399221c265d149be6": "wrong_object: astronaut figure",
+    "ae5278be3e5845a0987ddec061a1c362": "wrong_object: baboon statue",
+    "1fa73f748b54471d91e58fe3160f4898": "wrong_object: seashell",
+    "f4e7904583514084861480434f5f0d26": "broken: odd disc, unclear planet",
+    "74005b5251ac4eb4bd4142eba61d2548": "duplicate: blue planet like cell 8",
+    "82f3fe63232e4135a7321e8241a74505": "duplicate: sun earth moon like cell 16",
+    "7cf3b31ca60f45cc8e52f7fa863ad09a": "duplicate: Mars like cell 1",
+    "a4d1c83e660944049a7b7a6b833191db": "duplicate: same model as cell 16",
+    "af3515cda7a04ecb807365f96cc33613": "wrong_object: orb on rock",
+    "8fb3ff203d224a16b125033fec18d908": "wrong_object: crystal cluster",
+    "ecdc8c04e2fb4f24be11361f54592d77": "wrong_object: rocket",
+    "a5b67eb500c342579c01f013d0eb3856": "wrong_object: pyramid album art",
+    "fca9d2f2110c46b18444731c394920a7": "wrong_object: satellite",
+    "0652764465c44b819ef4a459e29cf46b": "wrong_object: a pool lamp scene",
+    "ab803e206f04410bb54a077a94057d8f": "wrong_object: a grandfather clock",
+    "9d877fff3c8b46eda634c3223ba9cd9d": "wrong_object: a fairy island"
+   },
+   "inName": true
+  },
+  {
+   "slug": "cars",
+   "noun": "car",
+   "plural": "cars",
+   "title": "Free car 3D models for three.js (GLB, CC BY)",
+   "query": "car",
+   "words": [
+    "car"
+   ],
+   "types": [
+    "vehicle"
+   ],
+   "not": [
+    "toy",
+    "cart",
+    "carriage",
+    "scar",
+    "card"
+   ],
+   "demand": [
+    {
+     "title": "How to move Car (.obj File) on Map [Solved]",
+     "url": "https://discourse.threejs.org/t/how-to-move-car-obj-file-on-map-solved/1173",
+     "views": 6847,
+     "site": "discourse"
+    },
+    {
+     "title": "3d car model with selectable elements",
+     "url": "https://discourse.threejs.org/t/3d-car-model-with-selectable-elements/9731",
+     "views": 6205,
+     "site": "discourse"
+    },
+    {
+     "title": "Syncing a GLTF car model with Cannon-es",
+     "url": "https://discourse.threejs.org/t/syncing-a-gltf-car-model-with-cannon-es/41088",
+     "views": 2693,
+     "site": "discourse"
+    },
+    {
+     "title": "Optimizing material count on a car glb model",
+     "url": "https://discourse.threejs.org/t/optimizing-material-count-on-a-car-glb-model/19627",
+     "views": 1005,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Driving a car means turning its wheels, and here the conversion matters: when the library converted these files it flattened their node trees and merged every static part drawn with the same material, so in many cars the four wheels became one mesh, or part of the body. Load a pick with `model_run` and `model_look` lists every mesh with its name and size; on an open page, `eval` can call `scene.getObjectByName()`. GLTFLoader changes names as it loads them: spaces become underscores and dots are dropped. Where the wheels are joined, move the car as one rigid body and spin wheel models of your own, or pick another car.\n\nFor physics with cannon-es or Rapier, give the body a box collider sized from `new THREE.Box3().setFromObject(car)`, not the mesh, and copy the body's position and quaternion onto the model after each step. The median car stands 1.4 m tall, already scaled to life, and because same-material parts were already merged, each material it carries is about one draw call.",
+   "related": [
+    "trucks",
+    "tanks",
+    "boats",
+    "airplanes"
+   ],
+   "reject": {
+    "e87d9b96bd534135b635e39f92b4c635": "wrong_object: scattered car parts",
+    "463c4e30004f492cb8633ea46a973b34": "wrong_object: car and robot scene",
+    "5fa7b3b44b704ddc90d5178331e9fb93": "wrong_object: street assets scene",
+    "05dfd55807b2408783d4eb5a3338f91f": "wrong_object: rock-like blob",
+    "68ab738d75eb45c2a2b0c19d67ac5903": "ip: Chevrolet SUV lookalike",
+    "cecfd84fa1d54090bb0710eea117f8a0": "ip: Jeep grille SUV",
+    "25392b75045946f7a4c9a03e3bea969e": "broken: untextured grey blob"
+   }
+  },
+  {
+   "slug": "trucks",
+   "noun": "truck",
+   "plural": "trucks",
+   "title": "Free truck 3D models for three.js (GLB, CC BY)",
+   "query": "truck",
+   "words": [
+    "truck",
+    "lorry",
+    "pickup"
+   ],
+   "types": [
+    "vehicle"
+   ],
+   "not": [
+    "toy"
+   ],
+   "demand": [
+    {
+     "title": "4x4 Builder - Off Road Vehicle Configurator",
+     "url": "https://discourse.threejs.org/t/4x4-builder-off-road-vehicle-configurator/20428",
+     "views": 4509,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Trucks often carry moving parts a game wants: a dump bed that tips, forklift forks that rise, a tow arm. Such a part keeps its own node when the source file animated it; otherwise the converter may have merged it into the chassis wherever the two shared a material. Check with `model_look` after loading the file through `model_run`, which names each mesh. A part's pivot is rarely where it should hinge: put a `THREE.Group` at the hinge, move the part into it with `attach()`, which keeps its world position, and rotate the group.\n\nFor a vehicle configurator, change paint by finding the body's material by name and setting its `color`, or give it a new texture with `colorSpace = THREE.SRGBColorSpace` and `flipY = false`, as glTF textures expect. Trucks run heavier than cars, a median of 11,700 triangles, and the median one is 2.5 m high, so measure a fleet's frame cost with `perf` before adding more.",
+   "related": [
+    "cars",
+    "tanks",
+    "boats",
+    "airplanes"
+   ],
+   "reject": {
+    "286cb8ba408547b9b5290e543a01214d": "duplicate: same forklift as cell 1",
+    "b5aece830f74464a89f239d656d9b4b3": "poor: black untextured box",
+    "bc430f19083f499f8ad014f28868d2a8": "poor: washed out grey blob"
+   }
+  },
+  {
+   "slug": "tanks",
+   "noun": "tank",
+   "plural": "tanks",
+   "title": "Free tank 3D models for three.js (GLB, CC BY)",
+   "query": "tank",
+   "words": [
+    "tank"
+   ],
+   "types": [
+    "vehicle"
+   ],
+   "not": [
+    "fish",
+    "water",
+    "oil",
+    "gas",
+    "fuel",
+    "aquarium",
+    "top"
+   ],
+   "demand": [
+    {
+     "title": "Retro-futuristic tank game - SYNTH*BLAST",
+     "url": "https://discourse.threejs.org/t/retro-futuristic-tank-game-synth-blast/41146",
+     "views": 3424,
+     "site": "discourse"
+    },
+    {
+     "title": "Tank driving experiment",
+     "url": "https://discourse.threejs.org/t/tank-driving-experiment/115",
+     "views": 2072,
+     "site": "discourse"
+    },
+    {
+     "title": "Panzerkampf - Tank shooter",
+     "url": "https://discourse.threejs.org/t/panzerkampf-tank-shooter/3361",
+     "views": 1277,
+     "site": "discourse"
+    },
+    {
+     "title": "Finally A Tank Simulator",
+     "url": "https://discourse.threejs.org/t/finally-a-tank-simulator/92097",
+     "views": 1091,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A tank game turns the turret about the vertical axis and raises the barrel about the turret's side axis, so the barrel must be a child of the turret. After the converter flattened these files, the turret and barrel sit beside the hull at the top of the scene, when they survived as separate meshes at all. Find them with `model_look` (after `model_run` loads the file), then rebuild the chain in code: a `THREE.Group` at the turret ring holding the turret, and a second group at the barrel's base holding the barrel, each filled with `attach()` so nothing jumps.\n\nTracks can roll by scrolling their texture when they have a material of their own: set the track map's `wrapS` to `THREE.RepeatWrapping` and add to `map.offset.x` as the tank moves. Tanks here are heavy for game props, a median of 16,400 triangles with nine in ten under 1.6 MB, so for an army run `model_audit` and fill the ranks with the low-poly ones (121 of them).",
+   "related": [
+    "cars",
+    "trucks",
+    "boats",
+    "airplanes"
+   ],
+   "reject": {
+    "dd28c8e7238b4cf0907b1b680b85846c": "broken: scattered parts, not a tank",
+    "d0065b57b3c74b0d8cfc0c8338f02cdd": "duplicate: same T34 as cell 15",
+    "afec0186c75f447db3ca880427765b25": "wrong_object: toy cat tank with text"
+   }
+  },
+  {
+   "slug": "boats",
+   "noun": "boat",
+   "plural": "boats",
+   "title": "Free boat 3D models for three.js (GLB, CC BY)",
+   "query": "boat",
+   "words": [
+    "boat",
+    "ship",
+    "yacht",
+    "sailboat",
+    "canoe"
+   ],
+   "types": [
+    "vehicle"
+   ],
+   "not": [
+    "space",
+    "spaceship",
+    "airship"
+   ],
+   "demand": [
+    {
+     "title": "How to make floating boat",
+     "url": "https://discourse.threejs.org/t/how-to-make-floating-boat/48412",
+     "views": 2581,
+     "site": "discourse"
+    },
+    {
+     "title": "Parametric Boat with Dynamic Water Masking",
+     "url": "https://discourse.threejs.org/t/parametric-boat-with-dynamic-water-masking/88150",
+     "views": 1278,
+     "site": "discourse"
+    },
+    {
+     "title": "3D boat game where you recycle trash",
+     "url": "https://discourse.threejs.org/t/3d-boat-game-where-you-recycle-trash/86641",
+     "views": 522,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A boat's pivot is at its keel's bottom, so placed at the water's height it rides on the tip of its keel. Lower it by its draft, roughly a third of the hull's height for a small boat, which `new THREE.Box3().setFromObject(boat)` lets you measure.\n\nTo float on waves, sample your wave function at a few points under the hull (bow, stern and both sides) each frame, then set the boat's height from their average and its pitch and roll from their differences; easing toward those targets with a damped spring stops it snapping. Water showing inside an open hull is fixed with a mask: a mesh matching the hull's inner opening, with `colorWrite: false` and a lower `renderOrder` than the water, writes depth so the water behind it is not drawn. Sails and rigging on the larger ships are often alpha-cut cards that need `alphaTest` and `THREE.DoubleSide`. The median boat here is 5 m tall, mast included.",
+   "related": [
+    "cars",
+    "trucks",
+    "tanks",
+    "airplanes"
+   ],
+   "reject": {
+    "1e2cc6a66e354a868b10c52d11fc15fd": "wrong_object: rocket kiddie ride",
+    "78014a140a00474f99f41f6b9b5fe4f7": "poor: tiny scattered boats",
+    "0dd451f295d049cea20c17d3ffa87ee3": "broken: black untextured silhouette",
+    "55118b23a5494e4b81eed831b9f8c871": "duplicate: same as cell 2",
+    "d34a38da8ac6454cbdea645433b8d45b": "wrong_object: seaplane, not boat",
+    "ff1cc34bdff94517abc7b521234606c8": "broken: missing textures, grey sailboat"
+   }
+  },
+  {
+   "slug": "airplanes",
+   "noun": "airplane",
+   "plural": "airplanes",
+   "title": "Free airplane 3D models for three.js (GLB, CC BY)",
+   "query": "airplane",
+   "words": [
+    "airplane",
+    "aircraft",
+    "plane",
+    "jet",
+    "biplane"
+   ],
+   "types": [
+    "vehicle"
+   ],
+   "not": [
+    "paper"
+   ],
+   "demand": [
+    {
+     "title": "Three.js Airplane Game: Spitfire",
+     "url": "https://discourse.threejs.org/t/three-js-airplane-game-spitfire/59301",
+     "views": 983,
+     "site": "discourse"
+    },
+    {
+     "title": "How can I make my airplane animaton smoother?",
+     "url": "https://discourse.threejs.org/t/how-can-i-make-my-airplane-animaton-smoother/60780",
+     "views": 402,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Flight code needs to know which way the nose points, and authors disagree: some face +Z, some face along x. Check a loaded plane with `look`, then wrap the model in a `THREE.Group`, turned so the nose faces the group's forward axis, and steer the group, never the model inside. Turn with local rotations (`rotateX` for pitch, `rotateZ` for roll, `rotateY` for yaw) so the axes follow the plane. For a chase camera, move it toward a point behind the plane with `position.lerp()` and `quaternion.slerp()`, using a factor scaled by the frame's delta, which smooths the jitter a camera locked rigidly to the plane shows.\n\nOf these, 70 are animated, usually a spinning propeller or landing gear. Animated parts kept their own nodes through the library's conversion, so an `AnimationMixer` plays them. On a static model the propeller has likely been merged into the nose; replace it visually with a blurred, alpha-tested disc that you rotate.",
+   "related": [
+    "cars",
+    "trucks",
+    "tanks",
+    "boats"
+   ]
+  },
+  {
+   "slug": "drones",
+   "noun": "drone",
+   "plural": "drones",
+   "title": "Free drone 3D models for three.js (GLB, CC BY)",
+   "query": "drone",
+   "words": [
+    "drone"
+   ],
+   "types": [
+    "vehicle",
+    "sci-fi-tech",
+    "electronics"
+   ],
+   "demand": [
+    {
+     "title": "FPV drone simulator",
+     "url": "https://discourse.threejs.org/t/fpv-drone-simulator/89651",
+     "views": 1895,
+     "site": "discourse"
+    },
+    {
+     "title": "Drone Simulator in Three.js: Real-Time Control and Animation",
+     "url": "https://discourse.threejs.org/t/drone-simulator-in-three-js-real-time-control-and-animation/59583",
+     "views": 1878,
+     "site": "discourse"
+    },
+    {
+     "title": "THREEJS displaying drone objects",
+     "url": "https://discourse.threejs.org/t/threejs-displaying-drone-objects/52627",
+     "views": 623,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Drones are small (the median is 0.5 m) and mostly sci-fi (116 of the 174), so an FPV camera needs a near plane short enough not to clip the frame: lower `camera.near` well below its default and add the camera as a child of the drone, a little ahead of its centre. A quadcopter's motion reads from its tilt: pitch it forward as it speeds up, roll it into turns, then ease back to level, and add a small hover bob with a sine of time so it never looks parked in the air.\n\nRotors are where these files differ. Of the 34 animated drones, those whose clip spins the rotors kept each rotor as its own node. In a static drone the conversion may have fused the rotors with the body; spin a translucent disc of your own over each mount instead. Status lights read better with `emissive` set on their material and a touch of bloom from `UnrealBloomPass`.",
+   "related": [
+    "cars",
+    "trucks",
+    "tanks",
+    "boats"
+   ],
+   "reject": {
+    "74383f15d59540d8a063bf456b81f307": "broken: black render",
+    "782936d211a54e4a9bf1f592b5c97173": "broken: white garbled blob"
+   }
+  },
+  {
+   "slug": "spaceships",
+   "noun": "spaceship",
+   "plural": "spaceships",
+   "title": "Free spaceship 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "spaceship",
+   "words": [
+    "spaceship",
+    "spacecraft",
+    "starship",
+    "space ship"
+   ],
+   "types": [
+    "vehicle",
+    "sci-fi-tech"
+   ],
+   "demand": [
+    {
+     "title": "Spaceship reactors: how to create visible light?",
+     "url": "https://discourse.threejs.org/t/spaceship-reactors-how-to-create-visible-light/7474",
+     "views": 1890,
+     "site": "discourse"
+    },
+    {
+     "title": "Need a spaceship from Dune called \"heighliner\" in threejs",
+     "url": "https://discourse.threejs.org/t/need-a-spaceship-from-dune-called-heighliner-in-threejs/46941",
+     "views": 1784,
+     "site": "discourse"
+    }
+   ],
+   "notes": "For an engine that glows, set the engine material's `emissive` colour and an `emissiveIntensity` above one, then add `UnrealBloomPass` (from `three/addons/postprocessing/`) so the bright pixels bleed into their surroundings. Emissive light reaches no other surface, so put a `PointLight` at the nozzle to light the hull around it. Where a ship has no separate engine material, add a small cone or sprite of your own behind each nozzle.\n\nSpace scenes run into float precision: far from the origin, vertices jitter as the camera moves. Keep the player's ship near the origin and move the universe around it. Ships here are modest in size, a median of 4 m tall, so a capital ship needs a `height` at pick time or a scale of your own. The style is mostly sci-fi (254 of the 471 that pass), and 14 carry a 2048 px texture; check those with `model_audit` and `shrink` them if a scene holds many.",
+   "related": [
+    "cars",
+    "trucks",
+    "tanks",
+    "boats"
+   ],
+   "reject": {
+    "98d0d7fad7884fe4820c6c89d545f054": "wrong_object: control panel and case",
+    "3f10437e8e854f06a412a4b0206fc9f2": "duplicate: yellow ship like cell 16"
+   }
+  },
+  {
+   "slug": "houses",
+   "noun": "house",
+   "plural": "houses",
+   "title": "Free house 3D models for three.js (GLB, CC BY)",
+   "query": "house",
+   "words": [
+    "house",
+    "cottage",
+    "cabin"
+   ],
+   "types": [
+    "building"
+   ],
+   "not": [
+    "bird",
+    "dog",
+    "doll",
+    "light",
+    "green",
+    "tree"
+   ],
+   "demand": [
+    {
+     "title": "How can I make House visualizer?",
+     "url": "https://discourse.threejs.org/t/how-can-i-make-house-visualizer/11205",
+     "views": 3493,
+     "site": "discourse"
+    },
+    {
+     "title": "Why my house model not showing and animation not working?",
+     "url": "https://discourse.threejs.org/t/why-my-house-model-not-showing-and-animation-not-working/58375",
+     "views": 631,
+     "site": "discourse"
+    },
+    {
+     "title": "How to Split Meshes into Components for a house model",
+     "url": "https://discourse.threejs.org/t/how-to-split-meshes-into-components-for-a-house-model/68573",
+     "views": 402,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Most houses are shells, with little or nothing inside, so a camera that walks through the door sees the walls vanish. Single-sided faces are culled from behind; pick a model with an interior for a walk-through, or set `side: THREE.DoubleSide` on the wall material as a stopgap.\n\nWhen a house does not show, the usual causes are its scale, its position and the camera. `look` lists the named objects on screen and those no look has seen, with their size and place, which separates a model far too large from one behind the camera. Every house comes at its real height (the median is 6 m), so a first-person camera sees doorways at the right size. To split a house into components (roof, doors, windows) for a visualizer, know that the converter joined parts sharing a material: a component stays selectable when it had a material of its own, and `model_look` lists the meshes that remain. Raycast against those to pick one.",
+   "related": [
+    "castles",
+    "windmills",
+    "doors"
+   ],
+   "reject": {
+    "ac8d29271d074ba1923db1b556ce9b6b": "broken: black blob, not a house",
+    "c4c09479570943e2845fbd4c6a450568": "wrong_object: tiny character diorama",
+    "17b5bf0c5560499ab46b51f9928dc87a": "broken: tiny hat on plane",
+    "47fac7a317ac4e8db11e2c472179d76c": "poor: tiny house in half-sphere",
+    "e46bfb52f3aa4073ab307456a5f01f20": "wrong_object: black tower with portal",
+    "3c667ec6be944befa299dcafcf5fec88": "broken: faded ghost render",
+    "42353d5e2a7f4f5ca6d7849a6d40c81c": "poor: bare wooden frame ruin"
+   }
+  },
+  {
+   "slug": "castles",
+   "noun": "castle",
+   "plural": "castles",
+   "title": "Free castle 3D models for three.js (GLB, CC BY)",
+   "query": "castle",
+   "words": [
+    "castle",
+    "fortress",
+    "fort"
+   ],
+   "types": [
+    "building",
+    "architecture-part",
+    "environment-scene"
+   ],
+   "demand": [
+    {
+     "title": "Castle Builder - a multi-user WebXR sandbox experience",
+     "url": "https://discourse.threejs.org/t/castle-builder-a-multi-user-webxr-sandbox-experience/34908",
+     "views": 994,
+     "site": "discourse"
+    },
+    {
+     "title": "How implement a walk-through or exploration feature for model (such as a \"castle\" model)",
+     "url": "https://discourse.threejs.org/t/how-implement-a-walk-through-or-exploration-feature-for-model-such-as-a-castle-model/74173",
+     "views": 613,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A castle is a building you walk around and often into, so collision matters more than for other props. The three.js addons hold the pieces: build an `Octree` from the castle with `octree.fromGraphNode(gltf.scene)` (from `three/addons/math/Octree.js`), move the player as a `Capsule` (`three/addons/math/Capsule.js`), and test it with `octree.capsuleIntersect()` each step, as the games_fps example does. Walls, stairs and ramps then work with no physics engine. `fromGraphNode` reads each mesh's geometry with its world matrix and ignores instance matrices, so collide against instanced walls through a merged copy or simple boxes.\n\nBattlements, towers and posts that appeared five or more times in a source file were turned into GPU instances by the converter, and GLTFLoader loads those as an `InstancedMesh`, so a long wall stays cheap. The median castle here reaches 12 m. A stylized look dominates (132 of the 198 that pass), and many are toy-like or blocky, so choose by the style of the rest of your scene.",
+   "related": [
+    "houses",
+    "windmills",
+    "doors"
+   ],
+   "reject": {
+    "d9236015b78f4168baecc3700773ff5b": "duplicate: block castle like cell 13",
+    "af83f0951266427da849236e70a9d3ee": "poor: tiny scattered blocks",
+    "2836b219403d4fd487d0434f88b65363": "poor: black crude wall",
+    "dbae0b8cf00e4d03874e4fc6eeeaf36e": "duplicate: block castle like cell 13",
+    "6c7e5361ae5b4a0c8c3a028473987ee5": "wrong_object: loose wooden blocks",
+    "a394a605d82749ef91235f4a1d6a4194": "duplicate: block castle like cell 11",
+    "4d5418cedfb9476ebf9093d7ed67133d": "duplicate: block castle like cell 19",
+    "96281efdf0be4a2ba81922e4c88547ed": "duplicate: block castle like cell 9",
+    "f42234653b5c44a18e4c600f0b83e8e5": "duplicate: block castle like cell 8"
+   }
+  },
+  {
+   "slug": "windmills",
+   "noun": "windmill",
+   "plural": "windmills",
+   "title": "Free windmill 3D models for three.js (GLB, CC BY)",
+   "query": "windmill",
+   "words": [
+    "windmill"
+   ],
+   "demand": [
+    {
+     "title": ":netherlands: Netherlands windmill scene",
+     "url": "https://discourse.threejs.org/t/28642",
+     "views": 1458,
+     "site": "discourse"
+    },
+    {
+     "title": "High-Performance Instanced Windmills",
+     "url": "https://discourse.threejs.org/t/89933",
+     "views": 322,
+     "site": "discourse"
+    }
+   ],
+   "notes": "The point of a windmill is its turning sails. In the 16 animated files the sails kept their own node and the clip turns them: play it with an `AnimationMixer` and set `timeScale` on the action to match your wind. In a static windmill the sails may have been merged into the tower where they shared its material; where they did not, they are a separate mesh you can turn, but its origin is probably not at the hub. Measure the hub with `new THREE.Box3().setFromObject(sails).getCenter(new THREE.Vector3())`, put an empty `Object3D` there, move the sails into it with `attach()` and spin that pivot.\n\nFor a field of windmills, give the towers one `InstancedMesh` and the sails another, with the sail geometry centred on its hub, and turn every sail in the vertex shader by time: a hundred windmills then cost two draw calls and no matrix updates per frame. A median height of 10 m suits a landscape view, where they read from afar.",
+   "related": [
+    "houses",
+    "castles",
+    "doors"
+   ],
+   "reject": {
+    "6e680a58c64746efa6aa17dd9f9b5655": "wrong_object: planet with lighthouse",
+    "82b24607faf44e4fa1f0872ef4c82fc7": "wrong_object: rotor blades only"
+   }
+  },
+  {
+   "slug": "doors",
+   "noun": "door",
+   "plural": "doors",
+   "title": "Free door 3D models for three.js (GLB, CC BY)",
+   "query": "door",
+   "words": [
+    "door"
+   ],
+   "types": [
+    "architecture-part",
+    "interior-furniture",
+    "prop"
+   ],
+   "not": [
+    "house",
+    "gate",
+    "torii",
+    "building",
+    "skylight",
+    "bridge",
+    "car",
+    "truck",
+    "vehicle",
+    "cabinet",
+    "wardrobe"
+   ],
+   "demand": [
+    {
+     "title": "How to create window and door openings in the wall?",
+     "url": "https://discourse.threejs.org/t/how-to-create-window-and-door-openings-in-the-wall/20473",
+     "views": 6356,
+     "site": "discourse"
+    },
+    {
+     "title": "Scaling and positioning in Door Configurator",
+     "url": "https://discourse.threejs.org/t/52902",
+     "views": 978,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A door swings on its hinge, but each file's origin sits at the bottom centre of its bounds, half a door's width from the hinge. Put an empty `THREE.Group` at the hinge edge (the minimum or maximum x of `Box3.setFromObject`), move the door into it with `attach()` so it keeps its place, and rotate the group about y to open it. Sci-fi doors (23 here) usually slide instead: move their panels sideways along the door's plane.\n\nThe 23 animated doors carry their own clip: play it with `action.setLoop(THREE.LoopOnce)` and `action.clampWhenFinished = true` so the door stays open, then run it with a negative `timeScale` to close it. For a door in a wall, leave a gap in the wall's geometry or cut one with the `three-bvh-csg` library; a door set into a solid wall has the wall drawn straight through it. At 2.1 m for the median door, size the wall opening to the door, not the reverse.",
+   "related": [
+    "houses",
+    "castles",
+    "windmills"
+   ],
+   "reject": {
+    "ca2e949400b6484080c86cb297390adf": "wrong_object: house",
+    "9b4909cb11324ac0b558a2452c9ad165": "wrong_object: ship skylight",
+    "7cf563375f97456ab67062c29829a683": "broken: white washed out",
+    "8bc9471da8f541c19c5aab416da81a2f": "broken: flat white plane",
+    "b4e1a33675d746f0be8e991b3268407c": "wrong_object: Golden Gate Bridge",
+    "d167ea26f0684e59af0e025cf4960afe": "broken: tiny speck",
+    "9d8a3b3603924309888116747fea6621": "duplicate: same sci-fi door",
+    "26e7c3b0257d442bb7464e85e118b21a": "duplicate: same sci-fi door",
+    "908b13271d7d48ac880df8b6f4ed1f30": "duplicate: same sci-fi door",
+    "80ecf6a925f74dab9958635a36d8f847": "duplicate: same as Mansfield door",
+    "31c5a095639549df87c7ba1e6cbbd47e": "wrong_object: torii gate",
+    "42c716e1f0264afd8964c412049b2558": "wrong_object: torii gate",
+    "e5f1397efabe4a32bb94525a112f323d": "wrong_object: torii gate",
+    "22109591841443c78b3462c47b1fc2bc": "wrong_object: torii gate",
+    "47cd2f81619a497aa748533914115168": "duplicate: same sci-fi door as cell 6",
+    "5124e08c4ad24a419151ca35ad9d180a": "wrong_object: door knocker, not a door",
+    "671582efd4d64e7dbf0d681bf360fc0b": "duplicate: same door set as cell 24"
+   }
+  },
+  {
+   "slug": "chairs",
+   "noun": "chair",
+   "plural": "chairs",
+   "title": "Free chair 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "chair",
+   "words": [
+    "chair",
+    "armchair",
+    "stool"
+   ],
+   "types": [
+    "interior-furniture"
+   ],
+   "not": [
+    "wheelchair"
+   ],
+   "demand": [
+    {
+     "title": "Animation of my chair is freezing my browser",
+     "url": "https://discourse.threejs.org/t/56754",
+     "views": 520,
+     "site": "discourse"
+    },
+    {
+     "title": "Procedural/Parametric furniture in Threejs",
+     "url": "https://discourse.threejs.org/t/68760",
+     "views": 2329,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Chairs here are mostly realistic (654 of the 992 that pass) and each is sized to the real thing, 0.9 m tall at the median, so a chair placed beside a table by another author lines up with no rescaling. Around a table, set each chair's position on a circle or along the edges and turn it with `lookAt()` toward the table's centre, adding `Math.PI` to its turn if it then faces away: authors disagree on which way a seat faces.\n\nA dining hall with many identical chairs suits an `InstancedMesh` per chair mesh, which keeps draw calls flat as seats are added. A realistic chair can be dense for its size (the upper quartile here starts at 23,700 triangles). If a scene stutters when chairs move or animate, make sure the model is loaded once and cloned, never reloaded, and measure with `perf`. For a seated character, put an empty `Object3D` at seat height as the sit point; for physics, a box collider is enough.",
+   "related": [
+    "sofas",
+    "cabinets",
+    "kitchen",
+    "bathroom"
+   ],
+   "reject": {
+    "995fa1e626284e50b9d536a59e50583b": "duplicate: same lounge chair set",
+    "0e1a7144bc5745b38018e669320246c7": "duplicate: same lounge chair set",
+    "08a4e29e7ca14a1cb047f25b85cb69aa": "duplicate: same lounge chair set",
+    "81ae47aa25664054830ca39cb9fa071d": "duplicate: near copy of other wing armchair",
+    "25e0adf02b7c4a7da22999065cdc63be": "broken: garbled mottled rocking chair texture"
+   }
+  },
+  {
+   "slug": "sofas",
+   "noun": "sofa",
+   "plural": "sofas",
+   "title": "Free sofa 3D models for three.js (GLB, CC BY)",
+   "query": "sofa",
+   "words": [
+    "sofa",
+    "couch",
+    "settee"
+   ],
+   "types": [
+    "interior-furniture"
+   ],
+   "demand": [
+    {
+     "title": "3D Sofa Design Simulation",
+     "url": "https://discourse.threejs.org/t/3d-sofa-design-simulation/16398",
+     "views": 1178,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Sofas are a small category here, 58 that pass the checks, mostly realistic, and in a room scene they are often the largest soft surface, so their fabric shows. `MeshStandardMaterial` makes cloth look like plastic under a strong light; switch the cover to `MeshPhysicalMaterial` with `sheen`, `sheenColor` and `sheenRoughness` for velvet or a soft weave, and keep `roughness` high.\n\nFor a design tool that changes fabric, load each swatch with `TextureLoader`, set `colorSpace = THREE.SRGBColorSpace`, `flipY = false` and `wrapS` and `wrapT` to `THREE.RepeatWrapping`, then assign it to the cover's `map` and scale the pattern with `repeat`. Find the cover by traversing the model for the mesh that holds it. A sofa needs soft contact with the floor: a blurred dark plane under it grounds it better than the hard edge of a shadow map. None here carries a 2048 px texture, so a close view shows a soft weave; a tiling fabric normal map adds detail.",
+   "related": [
+    "chairs",
+    "cabinets",
+    "kitchen",
+    "bathroom"
+   ],
+   "reject": {
+    "7d76316f8a5a41f799a219b4e5dd9915": "wrong_object: room scene not sofa",
+    "b06d3c74e45549d98fa94b9cc81005d6": "wrong_object: props set, not a sofa",
+    "988babac59094610bf3c63b0bf1f4ac2": "wrong_object: plain white box room",
+    "0467407f2a1444d387a4c3ee2abfdbe4": "wrong_object: tablet/table scene, not sofa",
+    "ad0165680fd24a3897242123e3f4dc44": "poor: shapeless brown blob",
+    "8d694f6efbd74b869d4dbd76391afea2": "poor: tangled black broken chair",
+    "10f43aac6d0c490a9e596fbc5a163519": "wrong_object: room corner scene",
+    "8860878909924206b492c8af1c3f94b5": "wrong_object: whole room scene",
+    "b99b70a6772648acb431e9ba159263bb": "wrong_object: a bench",
+    "21280b97f4564755806da85d986f0c10": "wrong_object: a scene of props"
+   }
+  },
+  {
+   "slug": "cabinets",
+   "noun": "cabinet",
+   "plural": "cabinets",
+   "title": "Free cabinet 3D models for three.js (GLB, CC BY)",
+   "query": "cabinet",
+   "words": [
+    "cabinet",
+    "cupboard",
+    "wardrobe",
+    "dresser",
+    "drawer"
+   ],
+   "types": [
+    "interior-furniture"
+   ],
+   "demand": [
+    {
+     "title": "Three.js WebGL Project: Cabinet Designer",
+     "url": "https://discourse.threejs.org/t/13511",
+     "views": 1449,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Cabinets invite interaction: doors that swing and drawers that slide. Check what you got first: the web conversion fused static pieces with a common material, and in many of these files the doors, drawers and carcass ended up as one mesh; `model_look`, after `model_run` loads the file, lists the meshes that are left. A drawer that survived as its own mesh slides out along the direction the cabinet faces, which its bounds show; a door needs a pivot at its hinge edge, made with an empty `Object3D` and `attach()`.\n\nFor a cabinet designer, scaling one model to a new width stretches its handles and panel borders. Build widths from parts instead: sides, a top and doors as separate pieces, or plain `BoxGeometry` with a wood texture whose `repeat` you set from the size. Most cabinets here are realistic (392 of the 506), with wood textures that look right under a room's environment light, so set `scene.environment` before tuning lamps.",
+   "related": [
+    "chairs",
+    "sofas",
+    "kitchen",
+    "bathroom"
+   ],
+   "reject": {
+    "11dfbd61f02a491a98119bdb482f818e": "wrong_object: a desk table",
+    "31f5862ac47b436f8db70f8aa47d2b07": "wrong_object: hi-fi stereo stack",
+    "bd2e0503f94a4bd2a7cbf07cfe313e31": "wrong_object: arcade machine",
+    "35b6624047b34b678e48d72343be8556": "wrong_object: a desk",
+    "475b5143d0cf42abbeba2b9cf35619b6": "broken: garbled noise texture",
+    "27dd41060e8b4c9dae8590b0f47cf855": "poor: black orange glitchy box",
+    "7b61a6e7d0fc4ba8b2f9388a37743d66": "broken: glitchy black render"
+   }
+  },
+  {
+   "slug": "kitchen",
+   "noun": "kitchen item",
+   "plural": "kitchen items",
+   "title": "Free kitchen 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "kitchen",
+   "words": [
+    "kitchen",
+    "fridge",
+    "stove",
+    "oven",
+    "kettle",
+    "pan",
+    "toaster",
+    "microwave"
+   ],
+   "types": [
+    "interior-furniture",
+    "prop",
+    "container",
+    "electronics",
+    "tool"
+   ],
+   "demand": [
+    {
+     "title": "Do you know libraries kitchen furnitures or where I can find the 3D kitchen furnitures models",
+     "url": "https://discourse.threejs.org/t/do-you-know-libraries-kitchen-furnitures-or-where-i-can-find-the-3d-kitchen-furnitures-models/7527",
+     "views": 1804,
+     "site": "discourse"
+    },
+    {
+     "title": "🏡 Interactive 3D Kitchen Showroom",
+     "url": "https://discourse.threejs.org/t/interactive-3d-kitchen-showroom/87607",
+     "views": 1599,
+     "site": "discourse"
+    },
+    {
+     "title": "Customizable kitchen & bathroom app",
+     "url": "https://discourse.threejs.org/t/customizable-kitchen-bathroom-app/3623",
+     "views": 1488,
+     "site": "discourse"
+    }
+   ],
+   "notes": "This category is mostly appliances and cookware, not fitted units: kettles, toasters, fridges, ovens and pans, many of them small (the median one is 0.25 m tall at real size). Set them on a counter by putting the origin, which sits at each model's base, at the counter's top height.\n\nSteel, chrome and enamel show nothing without something to reflect. Before adding lights, make an environment with `new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment()).texture` and assign it to `scene.environment`; metal then reads as metal and a few lights do the rest. A showroom full of appliances adds up in draw calls, roughly one per material per model, so check `perf` once the room is furnished. For a customizable kitchen, keep the fitted cabinets as boxes of your own with swappable materials, and use these models as the appliances and props that sit in them. A fridge door that opens needs a hinge pivot you add, since most of these files are static.",
+   "related": [
+    "chairs",
+    "sofas",
+    "cabinets",
+    "bathroom"
+   ],
+   "reject": {
+    "74ba60b7bddb440ab182dea15b33c722": "wrong_object: dark crate-like box",
+    "0fa1173062ee4eef9fb5e1a566cf3ede": "wrong_object: backpack",
+    "5204a07cca704667bd77d348a7113c11": "broken: garbled black-white table",
+    "da4bd868e0c04fc59678391b0128ede8": "broken: garbled stove",
+    "ae179358810b4b5090f8907009de35f1": "poor: unclear vessel, not a stove",
+    "d5e0d9ae5fd649d998c74c4e732751c0": "duplicate: same toaster as 6",
+    "d338921ee54d48e48304b20d1bfef76e": "poor: odd unclear room fragment",
+    "562aa156220a4c88b34ee564657c1119": "wrong_object: table with blocks",
+    "e89c593232cd4e7a9e8a4e676ca9884a": "duplicate: same toaster as cell 4",
+    "db91b500afba4661b7ad1a6df125c90b": "poor: unclear red broken kettle"
+   }
+  },
+  {
+   "slug": "bathroom",
+   "noun": "bathroom fixture",
+   "plural": "bathroom fixtures",
+   "title": "Free bathroom 3D models for three.js (GLB, CC BY)",
+   "query": "toilet",
+   "words": [
+    "toilet",
+    "bathtub",
+    "sink",
+    "shower",
+    "bathroom"
+   ],
+   "demand": [
+    {
+     "title": "Customizable kitchen & bathroom app",
+     "url": "https://discourse.threejs.org/t/customizable-kitchen-bathroom-app/3623",
+     "views": 1488,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Bathroom fixtures are white glazed ceramic, and white is where lighting goes wrong: with no tone mapping, a toilet or sink under a bright light clips to a flat white shape. Set `renderer.toneMapping` to `THREE.AgXToneMapping` or `THREE.ACESFilmicToneMapping` and lower the light until the curve of the bowl shows. Glaze looks like glaze when it reflects something, and a `RoomEnvironment` passed through `PMREMGenerator` gives soft reflections with no HDR file.\n\nA mirror is a `Reflector` from `three/addons/objects/Reflector.js`, which renders the scene again from behind the glass; one per room is reasonable, several are not. Wall and floor tiles work better as a tiling texture on a plane than as modelled geometry. The fixtures here are moderate in weight, three quarters of them at most 10,200 triangles, realistic for the most part (105 of the 147 that pass) and at real size. Toilets and sinks make up much of the set.",
+   "related": [
+    "chairs",
+    "sofas",
+    "cabinets",
+    "kitchen"
+   ],
+   "reject": {
+    "ab31bf3de9b5446bb607a8adac33bbef": "wrong_object: hospital trolley bed",
+    "3479f319b76f4f6a9894c1d38e90e686": "duplicate: hospital trolley, wrong object",
+    "66a2a5baf52d471ebc9136db7d794239": "wrong_object: whole bedroom",
+    "8de4485f72e045dea9c6d4e0c9d36125": "poor: green blob toilet",
+    "bec3ab19fbd746a88c0d7e30f702bdd5": "poor: plain brown box",
+    "20aed1e111ea4749bea19e3c810b0469": "wrong_object: hospital bed trolley",
+    "92293953688c4271a49297f9bfe8a89b": "poor: toilet tricycle novelty"
+   }
+  },
+  {
+   "slug": "furniture",
+   "noun": "furniture",
+   "plural": "furniture models",
+   "title": "Free furniture 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "furniture",
+   "types": [
+    "interior-furniture"
+   ],
+   "demand": [
+    {
+     "title": "Procedural/Parametric furniture in Threejs",
+     "url": "https://discourse.threejs.org/t/68760",
+     "views": 2329,
+     "site": "discourse"
+    },
+    {
+     "title": "Hi looking to hire a developer for a furniture game",
+     "url": "https://discourse.threejs.org/t/41407",
+     "views": 653,
+     "site": "discourse"
+    },
+    {
+     "title": "Do you know libraries kitchen furnitures or where I can find the 3D kitchen furnitures models",
+     "url": "https://discourse.threejs.org/t/do-you-know-libraries-kitchen-furnitures-or-where-i-can-find-the-3d-kitchen-furnitures-models/7527",
+     "views": 1804,
+     "site": "discourse"
+    }
+   ],
+   "notes": "This category covers the whole room: beds, desks, benches, lamps, bookcases and more, 2,546 that pass the checks, two thirds of them realistic. Because every model arrives at its real-world size, furniture from different authors fits one room without rescaling, and a desk sits at desk height. Place pieces against walls by their bounds: `new THREE.Box3().setFromObject(piece)` gives the depth to offset from the wall, and a quarter turn (`Math.PI / 2`) aligns a piece to a side wall.\n\nMixed authors mean mixed styles and texture densities, so keep one room to one style (realistic 1,716, stylized 441, low-poly 294 here). A furnished room reaches dozens of models, and every material in every model is a draw call; `perf` reports the total, and identical pieces repeated, such as beds in a dormitory, are worth an `InstancedMesh`. For indoor light, an environment map from `RoomEnvironment` plus one shadow-casting light keeps the frame cheap.",
+   "related": [
+    "chairs",
+    "sofas",
+    "cabinets",
+    "kitchen"
+   ],
+   "reject": {
+    "74ba60b7bddb440ab182dea15b33c722": "wrong_object: furnace stove",
+    "71950543a9af4a20a545fb50e4f0aa2b": "wrong_object: small room scene",
+    "47cb29d9ec8c460c9805fb465478000b": "wrong_object: cluttered props scene",
+    "c81f5f8a3dde4c4c97df45f81ba8e737": "wrong_object: book diorama",
+    "34dfc5259e104e108c40c9e891b16f7b": "wrong_object: mug holder",
+    "e441a6ebfefe4d689d49e60c1e8dfd37": "wrong_object: room diorama"
+   }
+  },
+  {
+   "slug": "barrels",
+   "noun": "barrel",
+   "plural": "barrels",
+   "title": "Free barrel 3D models for three.js (GLB, CC BY)",
+   "query": "wooden barrel",
+   "words": [
+    "barrel",
+    "cask",
+    "keg"
+   ],
+   "types": [
+    "container",
+    "prop"
+   ],
+   "demand": [
+    {
+     "title": "Can anyone help me build a barrel with texture and correct geometry",
+     "url": "https://discourse.threejs.org/t/can-anyone-help-me-build-a-barrel-with-texture-and-correct-geometry/34813",
+     "views": 1243,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Barrels are light: the median one has 1,160 triangles and nine in ten files are at most 0.5 MB, so the texture is most of what you download and most of what you see. A typical barrel is 0.9 m high, true to life, so it sits right in a level built at person scale.\n\nAs props they repeat, stacked in cellars and lined along docks: place them through an `InstancedMesh` per mesh, each copy spun to its own angle around y so the same stave pattern does not repeat in a row. For physics, a cylinder collider matches the shape, and a barrel knocked onto its side rolls on it as a box never would. An exploding barrel wants separate states (whole, burst), so keep the model and swap or hide it rather than editing its geometry. Most here are realistic (1,046 of the 1,617), with wood or metal colour and normal maps; under flat ambient light a normal map shows little, so light them from one side.",
+   "related": [
+    "books",
+    "guitars",
+    "shoes",
+    "cups"
+   ],
+   "reject": {
+    "b277a30a9d06478fa72a2b1142ddfdf2": "duplicate: same wooden barrel",
+    "11e57cd80a584dca8d5170a9b89275c2": "broken: black render"
+   }
+  },
+  {
+   "slug": "books",
+   "noun": "book",
+   "plural": "books",
+   "title": "Free book 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "book",
+   "words": [
+    "book"
+   ],
+   "not": [
+    "bookshelf",
+    "bookcase",
+    "shelf"
+   ],
+   "demand": [
+    {
+     "title": "Animating pages of a book",
+     "url": "https://discourse.threejs.org/t/animating-pages-of-a-book/28883",
+     "views": 10376,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Books are small props, a median of 0.3 m at real size, and they come as single closed books, stacks and open spellbooks. A shelf of them is a job for an `InstancedMesh`: one closed book model, each copy given a slightly different height and thickness through the scale in its matrix and its own cover colour through `setColorAt()`, reads as a varied shelf in one draw call.\n\nTurning pages need geometry that bends. Of these, 15 are animated and 9 rigged, and those may open or leaf through their pages in a clip; play them with an `AnimationMixer`. For a book of your own, make each page a `PlaneGeometry` with several segments across its width and bend it in the vertex shader (through `onBeforeCompile`) by an angle that grows across the page, or rotate a stack of thin page meshes about the spine one after another. A closed book needs nothing special: its cover texture carries the look.",
+   "related": [
+    "barrels",
+    "guitars",
+    "shoes",
+    "cups"
+   ],
+   "reject": {
+    "73153ac5ac4a403c860b9bfa24d9fca3": "wrong_object: plate of food",
+    "1120487b8b1a43f0b05533fd567bfda6": "wrong_object: character mascot",
+    "ac835c4cac724325bf25efa25dba41f7": "ip: HP Harry Potter book",
+    "ba04f5ac66194341bc7d437fb6c94674": "poor: untextured grey blob",
+    "8a3aa404f84847d5b6f6523deb391f4d": "poor: cluttered item, book not subject",
+    "5b46a4763f88446b98b43f63549f8e8d": "duplicate: matches strapped book stack cell 1",
+    "923860ff03da4c089f1866fb762c38c9": "wrong_object: lectern, tiny book",
+    "121c2dcc48d549cc8c15a593816a26a8": "wrong_object: a toy block, not a book",
+    "589d635a3f1540479d78eee1ded1221d": "unsafe: a nude painting on the cover"
+   }
+  },
+  {
+   "slug": "guitars",
+   "noun": "guitar",
+   "plural": "guitars and instruments",
+   "title": "Free guitar 3D models for three.js (GLB, CC BY)",
+   "query": "guitar",
+   "words": [
+    "guitar",
+    "ukulele"
+   ],
+   "types": [
+    "electronics",
+    "prop",
+    "decoration"
+   ],
+   "demand": [
+    {
+     "title": "Guitar Customizer",
+     "url": "https://discourse.threejs.org/t/guitar-customizer/47867",
+     "views": 1378,
+     "site": "discourse"
+    },
+    {
+     "title": "Sonicore - 3D guitar store",
+     "url": "https://discourse.threejs.org/t/sonicore-3d-guitar-store/78471",
+     "views": 544,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Guitars are thin objects with fine detail: strings, frets and tuning pegs a few millimetres across. At a distance the strings shimmer and break up, so create the renderer with `antialias: true` and call `renderer.setPixelRatio(window.devicePixelRatio)` on product pages, where the guitar fills the screen. The finish is lacquer over wood or paint, which `MeshPhysicalMaterial` renders with `clearcoat` and a low `clearcoatRoughness`; the coat needs reflections, so set `scene.environment` first.\n\nFor a guitar customizer, separate materials are what let you change the body colour, pickguard and fretboard one by one: find each by traversing the model and checking `material.name`, then set its `color` or a new `map`. In these files, parts that shared one material were joined during conversion, so a guitar with a single material can be recoloured as a whole and no further. The set includes ukuleles; most are realistic (97 of the 150 that pass), and each arrives at its instrument's real size, a median of 1 m.",
+   "related": [
+    "barrels",
+    "books",
+    "shoes",
+    "cups"
+   ],
+   "not": [
+    "hero",
+    "amp",
+    "amplifier",
+    "pedal",
+    "drum"
+   ],
+   "reject": {
+    "95125384e43546ccaadcbfffdc771142": "wrong_object: amplifier",
+    "816e7f9cdefe48a9b48082471d2edbce": "wrong_object: drum",
+    "bf7626f5088a4ae48f8dea618737ce3c": "wrong_object: piano music box",
+    "7e6a222bddbd41d1849aa036c17015b4": "broken: white blob drum",
+    "a2e4de090eea46c2b22b679df0cff622": "wrong_object: oil drum",
+    "100d28b5075941e986a98080b99b8166": "wrong_object: drum",
+    "b680edbee47c41c7ab8ab26eeb56fe9d": "wrong_object: effects pedal",
+    "9cf701a0db76411294266c5a3665458b": "wrong_object: timpani drum",
+    "e989583c447141438e4d6376f4189518": "wrong_object: violin",
+    "ef85374f34544ca3a039d80432d33cca": "wrong_object: drum",
+    "02d9fe6d3fed47d886f1e9f2a9491faa": "wrong_object: trumpet",
+    "45ff76dcea9a4274a3c1e70856867101": "duplicate: acoustic guitar like cell 19",
+    "7dde986b68834de6b5a9deff6819d3f1": "wrong_object: guitarist character",
+    "57924da0779444d5ba874b6b491de5ae": "wrong_object: axe weapon, not guitar"
+   }
+  },
+  {
+   "slug": "shoes",
+   "noun": "shoe",
+   "plural": "shoes",
+   "title": "Free shoe 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "shoe",
+   "words": [
+    "shoe",
+    "sneaker",
+    "boot",
+    "footwear",
+    "heel"
+   ],
+   "types": [
+    "clothing-accessory"
+   ],
+   "demand": [
+    {
+     "title": "MyShoeStylist | Shoe Configurator",
+     "url": "https://discourse.threejs.org/t/69396",
+     "views": 1258,
+     "site": "discourse"
+    },
+    {
+     "title": "Add new models (clothes, shoes, glasses,..) to an existing animated Avatar model",
+     "url": "https://discourse.threejs.org/t/51284",
+     "views": 1073,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A shoe is small: the median one here stands 0.12 m tall, so a close product view needs a small `camera.near` (a few millimetres) or the toe clips as the camera orbits in. Point `OrbitControls.target` at the shoe's middle rather than its origin, which sits under the sole.\n\nFor a configurator, find the parts by name with `traverse` (sole, laces, upper) and give each its own material: meshes loaded from one file often share a material, so call `material.clone()` before changing a colour, or every part changes with it. Leather and rubber read as flat plastic without reflections, so set `scene.environment` from a `PMREMGenerator` and `RoomEnvironment`.\n\nA shoe parented to an avatar's foot bone follows the foot but does not bend with it. A shoe that flexes has to be skinned to the avatar's own skeleton in a modelling tool first.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "cups"
+   ],
+   "reject": {
+    "ce6ed82e16ee4ca38d392e82ed7715c4": "ip: RTFKT branded sneaker",
+    "59e47f98cf4342cd94db5e717956256d": "poor: noisy grey scan blob",
+    "1a57458e745345c69178d90453392d8d": "broken: untextured grey blob"
+   }
+  },
+  {
+   "slug": "cups",
+   "noun": "cup and mug",
+   "plural": "cups and mugs",
+   "title": "Free cup and mug 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "mug",
+   "words": [
+    "cup",
+    "mug",
+    "tankard"
+   ],
+   "types": [
+    "container",
+    "prop",
+    "food"
+   ],
+   "not": [
+    "cupcake",
+    "cupboard"
+   ],
+   "demand": [
+    {
+     "title": "3D Mug mockup designer",
+     "url": "https://discourse.threejs.org/t/41961",
+     "views": 4454,
+     "site": "discourse"
+    },
+    {
+     "title": "☕️ 3D Ai Cup Configurator",
+     "url": "https://discourse.threejs.org/t/75838",
+     "views": 909,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Most of these mugs and cups are light: the median file is 0.22 MB with 3,570 triangles, so a table can hold several without trouble. A cup is usually one mesh, and the place a print goes depends on its texture coordinates. To put a user's logo or text on a mug, draw it on a canvas, wrap it in a `CanvasTexture` with `colorSpace = THREE.SRGBColorSpace`, and set `needsUpdate = true` after each redraw. When the mug's own coordinates do not suit the print, `DecalGeometry` from `three/addons/geometries/DecalGeometry.js` projects the picture onto the surface from a point and direction you choose.\n\nCoffee or tea inside is a separate flat disc you add at the right depth; it reads as liquid with a dark colour and low roughness. Steam rises well as a few soft sprites with `depthWrite: false`, drifting up and fading out.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "4ab354a28e1e45b09df8935613d75b4b": "wrong_object: cup holder",
+    "c0f348ed987b472d885903013711bee2": "wrong_object: samovar tea scene",
+    "d1b722a52e6c4203bea5de325b90da15": "broken: black garbled texture",
+    "645e671663554f7ebc75f66d2e853335": "duplicate: near copy of cell 11",
+    "8661522f5b814a67b279dfc44f8ec25f": "poor: damaged cup holder"
+   }
+  },
+  {
+   "slug": "bottles",
+   "noun": "bottle",
+   "plural": "bottles",
+   "title": "Free bottle 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "bottle",
+   "words": [
+    "bottle"
+   ],
+   "types": [
+    "container",
+    "food",
+    "prop"
+   ],
+   "demand": [
+    {
+     "title": "Glass bottles effect?",
+     "url": "https://discourse.threejs.org/t/31149",
+     "views": 3745,
+     "site": "discourse"
+    },
+    {
+     "title": "Bottle shader needed",
+     "url": "https://discourse.threejs.org/t/11075",
+     "views": 1554,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Glass is the hard part of a bottle. Use `MeshPhysicalMaterial` with `transmission: 1`, a low `roughness`, `ior` near that of glass and a `thickness` for the refraction, and give the scene an environment map: transmission refracts what is behind the bottle and the environment supplies the highlights. Transmission adds one extra render of the opaque scene per frame, shared by every glass object on screen.\n\nMake a liquid inside its own opaque mesh, slightly smaller than the bottle: the transmission pass refracts opaque objects, so an opaque liquid shows through the glass where a transparent one may not. Labels look right as an opaque part of the texture rather than a second transparent layer.\n\nNone of these files carries a 2048 px texture, and the median file is 0.17 MB. The potion bottles in the stylized and low-poly sets are often painted, not glass at all, and need no transmission.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "9808294a81464cc8aad275021da59aee": "broken: flat dark untextured potions",
+    "bb19b9f3eeb3463a96f31bd822087a92": "wrong_object: bottle holder",
+    "8a9782ade2764984a792f3fb553e27e5": "broken: ghostly white render",
+    "a282a4fd3c044db5aded9fb165c8ddb5": "poor: UV test grid bottle",
+    "bd7d993037a9473e99d380944c7bf5a1": "poor: dark broken-looking vodka bottle"
+   }
+  },
+  {
+   "slug": "vases",
+   "noun": "vase",
+   "plural": "vases",
+   "title": "Free vase 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "vase",
+   "words": [
+    "vase",
+    "amphora",
+    "urn"
+   ],
+   "types": [
+    "container",
+    "decoration"
+   ],
+   "demand": [
+    {
+     "title": "3D configurator for flowerpots and vases",
+     "url": "https://discourse.threejs.org/t/3d-configurator-for-flowerpots-and-vases/80789",
+     "views": 354,
+     "site": "discourse"
+    },
+    {
+     "title": "How to write my 3D Vase geometry to a file for 3D printing? (like .obj or .stl)",
+     "url": "https://discourse.threejs.org/t/90044",
+     "views": 434,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A vase invites a close look, so give it an environment map and, for glazed pottery, `MeshPhysicalMaterial` with `clearcoat` over the base colour. The library mixes museum scans (139 scanned, 36 under CC0) with modelled pieces, and the scans carry many more triangles: the middle half runs from 2,450 to 67,000. Check a heavy one with `model_audit` before a page holds several.\n\nFor 3D printing, export the loaded scene with `STLExporter` from `three/addons/exporters/STLExporter.js`. A printer needs a closed shell; `eval` runs `stats(target)` on the open page, which reports each mesh's closed edges, volume and genus, so you can tell a closed vase from an open one before you export it.\n\nA turned vase you shape yourself is a `LatheGeometry` from a few profile points, which a configurator can rebuild as the user drags a slider.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "ec67adc8cbe04e8693c7488b2a7c4cfc": "wrong_object: woven bowl",
+    "4b2a1ab8eed741eeb1e5a287bc5177e5": "wrong_object: bowl not vase",
+    "8d8543e8bcb940df9dd64fd8edaddf69": "poor: broken scan, not clear vase"
+   }
+  },
+  {
+   "slug": "candles",
+   "noun": "candle",
+   "plural": "candles",
+   "title": "Free candle 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "candle",
+   "words": [
+    "candle",
+    "candlestick"
+   ],
+   "demand": [
+    {
+     "title": "The Lonely Candle",
+     "url": "https://discourse.threejs.org/t/4097",
+     "views": 6173,
+     "site": "discourse"
+    }
+   ],
+   "notes": "The flame is what makes a candle. A small sprite or cone with an emissive or additive material (`blending: THREE.AdditiveBlending`, `depthWrite: false`) reads as fire, and a `PointLight` just above the wick, its intensity nudged by a little noise each frame, makes the light flicker on the table around it. A point light's shadow renders the scene six times for its cube map, so let one candle cast shadows and leave the rest without.\n\nA glow around the flame needs bloom: `UnrealBloomPass` in an `EffectComposer`, with a threshold high enough that the flame blooms and the wax does not. Keep the room's other light low, or the candle has nothing to light.\n\nThe page mixes bare candles with lanterns, holders and candlesticks, so read the card before you pick. The median file is 0.22 MB with 6,040 triangles.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "288260d7b8f74ce38fc390979c23f2f4": "broken: white garbled book mesh",
+    "af024cf4ddc34a9a8fbfbf7df3164d28": "wrong_object: candlestick telephone",
+    "ee79f78088944234a2f11479d64b943c": "wrong_object: bowl",
+    "d9f66a5fd13945429f1a1896c1102e9f": "broken: checker numbered cylinder",
+    "f319d98f9c1943fe82c5f7be94694afa": "wrong_object: drinking horn",
+    "d7825c8510df42308fbb74bf98e0a705": "poor: garbled copper shape",
+    "dc5e3c03ae2f4fb889d1852dc5884e51": "wrong_object: books pile"
+   }
+  },
+  {
+   "slug": "coins",
+   "noun": "coin",
+   "plural": "coins",
+   "title": "Free coin 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "gold coin",
+   "words": [
+    "coin"
+   ],
+   "not": [
+    "op",
+    "coin op",
+    "machine",
+    "arcade"
+   ],
+   "demand": [
+    {
+     "title": "Load texture on coin/circle",
+     "url": "https://discourse.threejs.org/t/17922",
+     "views": 1038,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A coin is tiny at real size: many of these are 0.002 m tall, lying flat. For a collectable in a game, pick it with a `height` in `asset_search` to make it as big as the player can see, and stand it on edge in a parent group so it spins about its own centre rather than the bottom-centre origin.\n\nA field of pickups is one `InstancedMesh`. Take the coin's mesh with `getObjectByProperty('isMesh', true)`, apply its `matrixWorld` to a clone of its geometry, and build `new THREE.InstancedMesh(geometry, mesh.material, count)`; each frame, update the matrices of the coins still in play and set `instanceMatrix.needsUpdate`. Hide a collected coin by scaling its matrix to zero.\n\nMetal gold looks dark brown without an environment map. Several cards are piles of coins or a chest full of them rather than single coins; the median file holds 4,400 triangles.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "2d28af5bf9d24d9bb4f8947438961e0e": "wrong_object: textured sphere",
+    "efe2cd1dbc324ac9b319f099da2663aa": "wrong_object: textured sphere",
+    "7219dce6835e4d7a860d048105309448": "wrong_object: bag diorama",
+    "de02f4c16b0746d8b3a0cad16f7c8de6": "wrong_object: robot coin bank",
+    "75089188b1084947910fbac088986ae4": "wrong_object: coin pouch",
+    "63690fe3b3044d379ded4e7318e9d0b5": "wrong_object: duck figure",
+    "882c100156204d29b3628334ab0e9928": "duplicate: same as pirate coin cell 6",
+    "bfb6b188d10d4cfcb34bec805231dc1f": "duplicate: skull coin like cell 14",
+    "56d913d3b0d84a0d8917cc2ad0e0d0ff": "duplicate: coin stacks like cell 15",
+    "828daf4777154cddb554a35905125293": "wrong_object: purse, not a coin",
+    "8c64b79a23d3491bb75fe1fc96962d53": "poor: patchy white texture",
+    "a35fc3b148324342995404499488e5b8": "wrong_object: a scythe"
+   }
+  },
+  {
+   "slug": "helmets",
+   "noun": "helmet",
+   "plural": "helmets",
+   "title": "Free helmet 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "helmet",
+   "words": [
+    "helmet"
+   ],
+   "types": [
+    "clothing-accessory",
+    "weapon",
+    "prop"
+   ],
+   "demand": [
+    {
+     "title": "Damaged Battle Helmet",
+     "url": "https://discourse.threejs.org/t/26119",
+     "views": 3370,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A helmet is mostly metal, and a metallic `MeshStandardMaterial` with no environment map renders nearly black: set `scene.environment` before judging the look. The page includes a version of the damaged sci-fi helmet that is a common glTF test model, a good check that lighting and tone mapping are set up.\n\nTo put a helmet on a character, find the head bone (often named `Head` or `mixamorigHead`) with `getObjectByName` and `add` the helmet to it, then move it into place in the bone's own space. The bone's scale passes to the helmet, so check its size with `look` after attaching it.\n\nOf the 504 that pass the checks, 23 carry a 2048 px texture and 24 are AI-generated. A pick for a page with several helmets can be cut down with `model_audit`'s `shrink`, which caps each texture's longer side, at 1024 for example.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "1463a7ae83cb463e8284b5d3ea63910c": "wrong_object: full armored body",
+    "4632a8855e9040d9975c45f13704ec45": "broken: red garbled mass",
+    "5697331ee00c4f13ad18005a6c82f7ef": "broken: black blob",
+    "7eb37c8436fa4e4e9fae7f0f30f317aa": "broken: garbled shards",
+    "9db71489c9b0420ea8c3673ad42f51ab": "poor: glitchy black render",
+    "f85b8c2149c24a4a8b86c7b7df7be254": "duplicate: diving helmet like cell 3"
+   }
+  },
+  {
+   "slug": "skulls",
+   "noun": "skull",
+   "plural": "skulls",
+   "title": "Free skull 3D models for three.js (GLB, CC BY)",
+   "query": "skull",
+   "words": [
+    "skull"
+   ],
+   "not": [
+    "helmet"
+   ],
+   "demand": [
+    {
+     "title": "Skull Hotel: A R3F Horror Game",
+     "url": "https://discourse.threejs.org/t/82287",
+     "views": 1006,
+     "site": "discourse"
+    },
+    {
+     "title": "PIP: Skull Demo is live!",
+     "url": "https://discourse.threejs.org/t/pip-skull-demo-is-live/79813",
+     "views": 453,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A skull suits a dark scene, and a dark scene shows the surface detail through raking light: one low, warm `SpotLight` or `DirectionalLight` from the side does more than a bright ambient. The scanned and sculpted skulls are heavy, with the upper quarter above 77,200 triangles, so keep those for close views and use a lighter one as decoration.\n\n`Raycaster` tests every triangle of a mesh it hits, which slows hover and click on a dense skull. Raycast against an invisible low-detail stand-in, such as a sphere sized to the skull's bounds, and keep the visible mesh out of the ray's list.\n\nThe 19 rigged skulls play their clips through an `AnimationMixer`; a jaw that opens in time with a sound is a bone you rotate in code. Two cards are not a bare skull, a ring and a dragon, each at its own real height.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "32b50775bd664a22ae7ef1d9e0fbb39f": "wrong_object: hooded character",
+    "e379513ec79a4a02b4a7c82c4d9d1416": "wrong_object: black creature",
+    "f18b6609047d4183a4d7c72abca9e553": "broken: empty render",
+    "7c0fd686143342cb9c8eabac0914dbf0": "broken: rock blob not skull",
+    "0dfda2514e4849cdb60b153808b5f65c": "wrong_object: staff",
+    "d8d6a1e24507495e95dcdb3071dd8335": "duplicate: low-poly skull like cell 22",
+    "43824a5692f94655968e705578096226": "wrong_object: cloaked character, not skull"
+   }
+  },
+  {
+   "slug": "burgers",
+   "noun": "burger",
+   "plural": "burgers",
+   "title": "Free burger 3D models for three.js (GLB, CC BY)",
+   "query": "burger",
+   "words": [
+    "burger",
+    "hamburger",
+    "cheeseburger"
+   ],
+   "demand": [
+    {
+     "title": "My 3D Portfolio Burger Shop",
+     "url": "https://discourse.threejs.org/t/67946",
+     "views": 989,
+     "site": "discourse"
+    }
+   ],
+   "notes": "These are food props, 0.12 m tall in the median, so a menu or shop view frames them close with a narrow field of view. Stylized ones lead the count (78), and most carry a painted texture that looks right under soft, even light.\n\nThirteen are animated, and several of those come apart: an exploding cheeseburger flies its layers out and back. Play a clip like that once with `action.setLoop(THREE.LoopOnce)` and `action.clampWhenFinished = true` so it rests on its last frame instead of snapping back, and listen for the mixer's `finished` event to start what comes next.\n\nA burger built as separate nodes (bun, patty, cheese, lettuce) can be stacked or pulled apart in code; check the node names with `eval` by traversing `gltf.scene`.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "2b141496ab3a41618d62b46dfa56f37d": "broken: tiny black speck",
+    "7eeb1d22a6d64b69b6712a1bf70c91ba": "wrong_object: burger stand",
+    "7907ff981478432781515977a5f53a86": "wrong_object: burger cart",
+    "e11f691c7b984059972212fa9d0a339e": "poor: brown blobs fries",
+    "df75912b499a49c0872be5c850b70142": "duplicate: exploded burger like cell 4",
+    "0ba7d81248e14720b51394d1ca9e1678": "broken: black translucent blob",
+    "414118f373864247b74640e09b342a2d": "broken: barely visible speck",
+    "747fe8f37183402fa2f75bd5129c9d6b": "duplicate: matches low-poly burger cell 13",
+    "074a2164ee564e408e33ffd2fada9474": "broken: renders tiny, nearly empty",
+    "621437291f7f40e6b565281b5439f577": "poor: murky grey translucent burger",
+    "fb9fff808e304f75a251146a74844b51": "broken: renders tiny, nearly empty"
+   }
+  },
+  {
+   "slug": "guns",
+   "noun": "gun",
+   "plural": "guns",
+   "title": "Free gun 3D models for three.js (GLB, CC BY)",
+   "query": "gun",
+   "words": [
+    "gun",
+    "pistol",
+    "rifle",
+    "shotgun",
+    "revolver",
+    "handgun"
+   ],
+   "types": [
+    "weapon"
+   ],
+   "not": [
+    "nail",
+    "glue",
+    "water",
+    "toy",
+    "cannon",
+    "turret"
+   ],
+   "demand": [
+    {
+     "title": "First Person Shooter Tommy Gun Demo",
+     "url": "https://discourse.threejs.org/t/first-person-shooter-tommy-gun-demo/53853",
+     "views": 1299,
+     "site": "discourse"
+    },
+    {
+     "title": "How to put a weapon in a character's hand?",
+     "url": "https://discourse.threejs.org/t/how-to-put-a-weapon-in-a-characters-hand/22121",
+     "views": 4181,
+     "site": "discourse"
+    },
+    {
+     "title": "Adding weapon to character hand",
+     "url": "https://discourse.threejs.org/t/adding-weapon-to-character-hand/30702",
+     "views": 2356,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A first-person weapon parented to the camera (`camera.add(gun)`, with the camera added to the scene) clips into walls as the player walks up to one. A common fix keeps the gun in a second scene with its own camera, where it sits low and to the right and never moves: set `renderer.autoClear = false`, render the world, call `renderer.clearDepth()`, then render the weapon scene on top.\n\nAdd an empty `Object3D` at the muzzle as a child of the gun; its world position is where the flash and the tracer start. Aim with a `Raycaster` from the camera's centre, not from the barrel, so the shot lands under the crosshair.\n\nThe models face different axes, so turn each inside a parent group once. Sci-fi guns lead here (223), ahead of realistic ones (193).",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "3230299e345b4885b62633a441849f26": "broken: garbled pink-black texture",
+    "073d2e30ef4f4a8db5490efcf690f57f": "wrong_object: garbled character pose",
+    "16132768b36040aab91c6e873b52db4e": "duplicate: AK rifle like cell 14"
+   }
+  },
+  {
+   "slug": "swords",
+   "noun": "sword",
+   "plural": "swords",
+   "title": "Free sword 3D models for three.js (GLB, CC BY)",
+   "query": "sword",
+   "words": [
+    "sword",
+    "katana",
+    "blade",
+    "sabre",
+    "saber"
+   ],
+   "types": [
+    "weapon"
+   ],
+   "not": [
+    "shield"
+   ],
+   "demand": [
+    {
+     "title": "How to put a weapon in a character's hand?",
+     "url": "https://discourse.threejs.org/t/how-to-put-a-weapon-in-a-characters-hand/22121",
+     "views": 4181,
+     "site": "discourse"
+    },
+    {
+     "title": "Mixamo adding a weapon to character",
+     "url": "https://discourse.threejs.org/t/mixamo-adding-a-weapon-to-character/5479",
+     "views": 2257,
+     "site": "discourse"
+    },
+    {
+     "title": "Knight's Waltz — a top-down physics sword-dueling game (Three.js + Rapier, no game engine)",
+     "url": "https://discourse.threejs.org/t/knights-waltz-a-top-down-physics-sword-dueling-game-three-js-rapier-no-game-engine/93523",
+     "views": 308,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Swords are light here: the median one has 1,220 triangles in a 0.1 MB file and is 0.9 m long. Most stand blade up, so the bottom-centre origin sits at the pommel. Put the sword in a parent group, offset it so the grip is at the group's origin, then add the group to the character's hand bone (often `mixamorigRightHand`) and rotate the group until the blade lines up with the arm.\n\nFor hits, test a line from hilt to tip each frame, and also the line it swept since the last frame, against the targets' boxes: a fast swing can pass through a thin target between two frames. A physics engine such as Rapier does the same with a sensor collider that follows the blade.\n\nA swing trail is a ribbon mesh whose vertices take the tip's positions over the last few frames, drawn additive with `depthWrite: false`.",
+   "related": [
+    "barrels",
+    "books",
+    "guitars",
+    "shoes"
+   ],
+   "reject": {
+    "7421b2b9d7c6427d8f719a708a841c25": "wrong_object: gun-blade firearm",
+    "3ab5a5e16ad646d4853716f0d8525795": "broken: faded near-invisible render",
+    "c393f09d54304d5fa5f62b29631d6241": "poor: fragments not a sword",
+    "82e2c9dba6d240968ac8ea14f0f972e0": "duplicate: same as cell 10",
+    "9e55eb2328994418891adb92a71a4373": "duplicate: same as cell 10",
+    "32c5492c674540f6b267b75ea80c263d": "broken: solid black silhouette",
+    "d2ff9d57a76e434fa468dbc6ed80a545": "duplicate: basic sword like cell 8",
+    "8bd62b1f2fc34557a486eaf64bc2b4e3": "duplicate: basic sword like cell 16",
+    "2dcc6335a13947aebf76ff2cc7676542": "wrong_object: flaming pedestal tower"
+   }
+  },
+  {
+   "slug": "soldiers",
+   "noun": "soldier",
+   "plural": "soldiers",
+   "title": "Free soldier 3D models for three.js (GLB, CC BY)",
+   "query": "soldier",
+   "words": [
+    "soldier",
+    "warrior"
+   ],
+   "types": [
+    "character-humanoid"
+   ],
+   "demand": [
+    {
+     "title": "Open World Super Soldier Battle Game Demo",
+     "url": "https://discourse.threejs.org/t/open-world-super-soldier-battle-game-demo/35988",
+     "views": 3009,
+     "site": "discourse"
+    },
+    {
+     "title": "A 3D Soldier | A splash screen for an upcoming game",
+     "url": "https://discourse.threejs.org/t/a-3d-soldier-a-splash-screen-for-an-upcoming-game/17712",
+     "views": 1481,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Soldiers are mostly characters at human height (1.8 m in the median), and 371 are rigged and 270 animated. Filter with `rigged: true` or `animated: true` in `asset_search` when the game needs them to move, since a soldier in a fixed pose cannot be animated in three.js without a rig.\n\nClips play on another soldier when the bone names match, as they do between Mixamo exports; when the names differ, `SkeletonUtils.retargetClip` maps one skeleton's clip onto another. A squad of the same soldier needs `SkeletonUtils.clone` for each copy and its own `AnimationMixer`, because a plain `clone()` leaves the copies bound to the first skeleton.\n\nA weapon goes in the hand by adding it to the hand bone. 45 soldiers carry a 2048 px texture and 46 are AI-generated; a squad of the heavier ones is worth a `perf` run once it is on screen.",
+   "related": [
+    "zombies",
+    "pirates",
+    "robots",
+    "animated-characters"
+   ],
+   "reject": {
+    "9e604bcaed8a428f8514446304c85dcc": "ip: named anime character Koharu",
+    "cc15bafe8bf6481e8ba57e920dce4557": "broken: white featureless blob",
+    "439866a689be45f0bf31e0785497161f": "broken: garbled yellow render",
+    "ed473dc974444ee0951b132e2b40a82b": "broken: garbled dark render",
+    "e4cd963f356145b09ee72c8f5573bbb9": "poor: unreadable voxel blob",
+    "fb11d8bde6734b24a4eb5fe2b6e062e1": "wrong_object: naga sea creature",
+    "627df26d1e8c4594aa3a7f5b26970bab": "broken: black untextured statue",
+    "9ad274ec9fd84511b26f4f8b06ae1bfa": "duplicate: cat soldier like cell 15",
+    "2c705b1323e44a2798d49e5037b92364": "broken: renders tiny, nearly empty",
+    "66707b5e61444da3ad8f1502530db9f8": "broken: renders tiny, nearly empty"
+   }
+  },
+  {
+   "slug": "zombies",
+   "noun": "zombie",
+   "plural": "zombies",
+   "title": "Free zombie 3D models for three.js (GLB, CC BY)",
+   "query": "zombie",
+   "words": [
+    "zombie",
+    "undead",
+    "ghoul"
+   ],
+   "types": [
+    "character-humanoid",
+    "creature-animal"
+   ],
+   "demand": [
+    {
+     "title": "Zombie Robot (THREE.js + Yuka.js First Person Shooter survival zombie)",
+     "url": "https://discourse.threejs.org/t/zombie-robot-three-js-yuka-js-first-person-shooter-survival-zombie/61296",
+     "views": 2168,
+     "site": "discourse"
+    },
+    {
+     "title": "Yet Another Zombie Horror - a simple first / third person zombie survival shooter",
+     "url": "https://discourse.threejs.org/t/yet-another-zombie-horror-a-simple-first-third-person-zombie-survival-shooter/80760",
+     "views": 1316,
+     "site": "discourse"
+    },
+    {
+     "title": "Zombie Attack - Shooter Experiment Demo",
+     "url": "https://discourse.threejs.org/t/zombie-attack-shooter-experiment-demo/46756",
+     "views": 696,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A zombie horde is many skinned meshes, and each one costs its own draw call, skeleton update and shadow pass. Clone each with `SkeletonUtils.clone` and give it a mixer, then break up the march: start each walk at a different `action.time` and give each a slightly different `timeScale`, so the crowd does not step in unison.\n\nOf these, 66 are animated and 77 rigged. Several cards are a single clip on its own (a walk, a run, an attack), so a zombie can take its moves from more than one file when the bone names agree.\n\nA skinned mesh is culled by bounds that may not follow its pose, so a lunging zombie can vanish at the screen's edge; `skinnedMesh.computeBoundingSphere()` after the pose changes, or `frustumCulled = false` on a few, stops that. A horde is a good case for `perf` with `costs: true` to see what the frame spends.",
+   "related": [
+    "soldiers",
+    "pirates",
+    "robots",
+    "animated-characters"
+   ],
+   "reject": {
+    "a9aee70a10474cd5b23a5a327e9034af": "wrong_object: polar bear",
+    "a85365552a894c61963db88fac1d03d7": "broken: black blob",
+    "155f6bac268e4693b954943fae08a022": "broken: tiny garbled render",
+    "af90d275b3b849d69f6f79aa99d6e276": "wrong_object: winged demon",
+    "259bba47333c48998dd1651eca073143": "wrong_object: orc ghoul",
+    "98cf86d2ed404a8bbfd7bc688e8eff4b": "broken: tiny speck render"
+   }
+  },
+  {
+   "slug": "pirates",
+   "noun": "pirate",
+   "plural": "pirate models",
+   "title": "Free pirate 3D models for three.js (GLB, CC BY)",
+   "query": "pirate",
+   "words": [
+    "pirate"
+   ],
+   "demand": [
+    {
+     "title": "Journey on a pirate ship as personal portfolio",
+     "url": "https://discourse.threejs.org/t/journey-on-a-pirate-ship-as-personal-portfolio/43915",
+     "views": 2491,
+     "site": "discourse"
+    },
+    {
+     "title": "Pirate game in progress",
+     "url": "https://discourse.threejs.org/t/pirate-game-in-progress/919",
+     "views": 1239,
+     "site": "discourse"
+    }
+   ],
+   "notes": "The pirate page is a mix: characters, chests, barrels, a cannon, a lantern, furniture and an airship, at heights from a 0.2 m hook to the 12 m airship. Read each card's height, and pass `height` to `asset_search` when a ship should be a toy on a table rather than a vessel the player walks on.\n\nA ship you add to this scene rocks well in a parent group: set its `rotation.x` and `rotation.z` from slow sine waves of the elapsed time, and its `position.y` from a third, so the hull rolls and bobs. The origin sits at the keel, so lower the group until the waterline meets the sea.\n\nA chest whose lid opens needs the lid as its own node: find it with `getObjectByName` and rotate it about its hinge. Stylized models lead the count (96), so keep a scene's characters and props in that one style.",
+   "related": [
+    "soldiers",
+    "zombies",
+    "robots",
+    "animated-characters"
+   ],
+   "reject": {
+    "25fe22626ea545e29f5ccca0489db881": "wrong_object: house not pirate",
+    "ec8b60ad1a324e689614143b1c7ce3f4": "wrong_object: robot minion",
+    "562d8f367d8149138b0bca68ac1cad24": "duplicate: another pirate chest"
+   }
+  },
+  {
+   "slug": "robots",
+   "noun": "robot",
+   "plural": "robots",
+   "title": "Free robot 3D models for three.js (GLB, CC BY)",
+   "query": "robot",
+   "words": [
+    "robot",
+    "droid",
+    "android",
+    "mech"
+   ],
+   "types": [
+    "character-humanoid",
+    "sci-fi-tech",
+    "creature-animal"
+   ],
+   "demand": [
+    {
+     "title": "threeJS-URDF Loading a Robot model and control it with DAT.GUI",
+     "url": "https://discourse.threejs.org/t/61724",
+     "views": 2079,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Many robots and mechs are built from separate rigid parts rather than one skinned body: a turret, arms, legs, each its own node. List the node names with `eval` by traversing `gltf.scene`, then turn a part with `getObjectByName` and its `rotation`; parts parented to each other move together, as a robot arm's joints do. Of the 2,059 that pass the checks, 366 are rigged and 397 animated.\n\nThe demand here includes URDF robots. These files are GLB, not URDF, so the joint limits a URDF loader reads are not in them; set your own limits in code with `THREE.MathUtils.clamp`.\n\nGlowing eyes and panels are emissive materials; a bloom pass with a threshold above the hull's brightness makes them glow without washing out the metal. Sci-fi (842) and stylized (798) robots look different enough that one scene reads better with one of them.",
+   "related": [
+    "soldiers",
+    "zombies",
+    "pirates",
+    "animated-characters"
+   ],
+   "reject": {
+    "045dc53e101549d18c7161a358f7a82e": "broken: exploded body parts",
+    "936d052d807349d0aed54b177de8eea0": "broken: garbled translucent render",
+    "f5648486182c486eaa4896f6a0162027": "poor: washed-out shapeless mech",
+    "29611b0de3814a9b8e97986c155b059e": "wrong_object: blob not a robot",
+    "a704a983d4d640da8ccf0f515968056f": "ip: Apex Legends loot robot",
+    "bd3f1e539c8e4b539489203e990ff7c0": "ip: Star Wars Power droid",
+    "c5bbb41ecf4e4829820e8421e01895a4": "ip: Star Wars battle droid look"
+   }
+  },
+  {
+   "slug": "animated-characters",
+   "noun": "animated character",
+   "plural": "animated characters",
+   "title": "Free animated character 3D models for three.js (GLB, CC BY)",
+   "query": "animated character",
+   "types": [
+    "character-humanoid"
+   ],
+   "animated": true,
+   "demand": [
+    {
+     "title": "Third person character controller",
+     "url": "https://discourse.threejs.org/t/third-person-character-controller/5306",
+     "views": 27184,
+     "site": "discourse"
+    },
+    {
+     "title": "Simple character controller with animations",
+     "url": "https://discourse.threejs.org/t/simple-character-controller-with-animations/53542",
+     "views": 3320,
+     "site": "discourse"
+    },
+    {
+     "title": "How to apply mixamo animation to readyplayer.me character",
+     "url": "https://discourse.threejs.org/t/how-to-apply-mixamo-animation-to-readyplayer-me-character/35996",
+     "views": 4634,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Every one of these 2,764 is animated, and 2,505 are rigged. Play one with an `AnimationMixer`: `mixer.clipAction(gltf.animations[0]).play()`, then `mixer.update(dt)` each frame with the frame's time in seconds. Find a clip by name with `THREE.AnimationClip.findByName(gltf.animations, 'Run')`; many files hold a single clip named after the move.\n\nFor a character controller, blend between idle, walk and run with `crossFadeTo` over a fraction of a second, and match the walk's `timeScale` to the speed so the feet do not slide. Clips with root motion move the hips forward and snap back at each loop; an in-place clip, or one with the hips' position track removed, lets your code move the character instead.\n\nSeveral copies of one character need `SkeletonUtils.clone`. The median file is 0.38 MB, and none carries a 2048 px texture.",
+   "related": [
+    "soldiers",
+    "zombies",
+    "pirates",
+    "robots"
+   ],
+   "reject": {
+    "c64b2587728c4e90bd73a38f1666f76b": "ip: Slenderman",
+    "dd0dacf89b4e41669b86b240b0dea6a9": "ip: Siren Head creature",
+    "a40ced193a1943c7bc259dba238651ca": "broken: nearly invisible",
+    "bf07d140f6bf4bb88eca7b2ef6bc33cc": "broken: white featureless blob",
+    "aa56e7f6d92942b5880a349b9d0769b1": "broken: black silhouette"
+   }
+  },
+  {
+   "slug": "rigged-characters",
+   "noun": "rigged character",
+   "plural": "rigged characters",
+   "title": "Free rigged character 3D models for three.js (GLB, CC BY)",
+   "query": "rigged character",
+   "types": [
+    "character-humanoid"
+   ],
+   "rigged": true,
+   "demand": [
+    {
+     "title": "Importing a Rigged Model into ThreeJS",
+     "url": "https://discourse.threejs.org/t/484",
+     "views": 7776,
+     "site": "discourse"
+    },
+    {
+     "title": "[SOLVED] How to rotate arm of skinned and rigged character",
+     "url": "https://discourse.threejs.org/t/solved-how-to-rotate-arm-of-skinned-and-rigged-character/5572",
+     "views": 7364,
+     "site": "discourse"
+    },
+    {
+     "title": "Can I apply a mixamo animation to another model that has already been rigged?",
+     "url": "https://discourse.threejs.org/t/can-i-apply-a-mixamo-animation-to-another-model-that-has-already-been-rigged/28846",
+     "views": 4340,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A rigged character has a skeleton, but not every file here brings moves: 3,622 are rigged and 2,505 of those carry clips. A rig without clips can take Mixamo animations when its bones carry Mixamo's names. GLTFLoader drops the colon from a bone name, so `mixamorig:Hips` becomes `mixamorigHips`, and a clip's track names have to match that.\n\nTo pose a bone yourself, find it with `getObjectByName` and set its `rotation` after `mixer.update(dt)` in the same frame; the mixer writes every animated bone on each update and would overwrite an earlier change. Add a `THREE.SkeletonHelper(model)` to the scene to see the bones while you work.\n\nMany are in a T-pose or A-pose, the bind pose, which is what you see until a clip plays. Stylized rigs lead here (1,728), and none carries a 2048 px texture.",
+   "related": [
+    "soldiers",
+    "zombies",
+    "pirates",
+    "robots"
+   ],
+   "reject": {
+    "945ac7f81f4a4027b6deb4ed03577cc2": "ip: SCP-096",
+    "aaf0b023dda34d8287e4e5874ab01acf": "broken: invisible render",
+    "77508259efdb4ca3bf949988213f7cf4": "broken: black silhouette",
+    "9ce4577b75d44bb983ee75d07f25cd16": "ip: Teletubby character",
+    "a94ef0f5dee9480a838cb8b6ec6859fb": "broken: tiny speck render"
+   }
+  },
+  {
+   "slug": "low-poly-characters",
+   "noun": "low-poly character",
+   "plural": "low-poly characters",
+   "title": "Free low-poly character 3D models for three.js (GLB, CC BY)",
+   "query": "low poly character",
+   "types": [
+    "character-humanoid"
+   ],
+   "styles": [
+    "low-poly"
+   ],
+   "demand": [
+    {
+     "title": "Tips for optimizing skinned/boned characters?",
+     "url": "https://discourse.threejs.org/t/tips-for-optimizing-skinned-boned-characters/47326",
+     "views": 623,
+     "site": "discourse"
+    },
+    {
+     "title": "Third person character controller",
+     "url": "https://discourse.threejs.org/t/third-person-character-controller/5306",
+     "views": 27184,
+     "site": "discourse"
+    }
+   ],
+   "notes": "These are light: the median character has 2,170 triangles in a 0.07 MB file, so a crowd costs little geometry. What costs more in a skinned crowd is the draw calls and the bone updates, one set per character. Characters that share one palette texture can share one material, so the renderer changes state less often between them.\n\nMany low-poly characters are coloured from a small palette image. Set `texture.magFilter = THREE.NearestFilter` and `minFilter = THREE.NearestFilter` (or `generateMipmaps = false`) so the colour cells stay crisp instead of blending into their neighbours. Faceted faces read clearly with `flatShading: true` on the material.\n\nOf the 1,712 that pass the checks, 501 are rigged and 399 animated; filter with `rigged: true` in `asset_search` for one that will walk.",
+   "related": [
+    "soldiers",
+    "zombies",
+    "pirates",
+    "robots"
+   ],
+   "reject": {
+    "386394f202014d6aa20fa69b1e4a7f2f": "poor: coloured head blob",
+    "7f32ed0ed4fb4291bce2e0b5c093dee4": "poor: coloured head blob",
+    "ed34fffcb7ea4147a4663ecc99b86f78": "broken: tiny dark figure",
+    "69f38ac714914c10a1049f99973d64a8": "ip: Toyohisa, named anime character"
+   }
+  },
+  {
+   "slug": "characters",
+   "noun": "character",
+   "plural": "characters",
+   "title": "Free character 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "character",
+   "types": [
+    "character-humanoid"
+   ],
+   "words": [
+    "character",
+    "man",
+    "woman",
+    "person",
+    "human",
+    "boy",
+    "girl"
+   ],
+   "not": [
+    "robot"
+   ],
+   "demand": [
+    {
+     "title": "Third person character controller",
+     "url": "https://discourse.threejs.org/t/third-person-character-controller/5306",
+     "views": 27184,
+     "site": "discourse"
+    },
+    {
+     "title": "How to put a weapon in a character's hand?",
+     "url": "https://discourse.threejs.org/t/how-to-put-a-weapon-in-a-characters-hand/22121",
+     "views": 4181,
+     "site": "discourse"
+    },
+    {
+     "title": "Add new models (clothes, shoes, glasses,..) to an existing animated Avatar model",
+     "url": "https://discourse.threejs.org/t/51284",
+     "views": 1073,
+     "site": "discourse"
+    }
+   ],
+   "notes": "The character page covers a wide mix, from stylized students and cartoon figures to realistic adults, most of them between 1.55 m and 1.8 m tall. 2,924 of the 8,455 that pass the checks are rigged, and the rest hold a fixed pose, often a T-pose, with no skeleton to animate. When the character must move, search with `rigged: true`.\n\nFor a third-person game, collide with a capsule around the character, not its mesh, and let the camera follow a point at head height behind it. Hair is often drawn on cards with transparent texture: give those materials `alphaTest` around a half and `side: THREE.DoubleSide`, and turn off `transparent`, which sorts badly on overlapping strands.\n\nAccessories (a hat, glasses, a bag) go on a bone with `add`. Stylized characters lead here (3,925), ahead of realistic (1,492) and low-poly (1,356).",
+   "related": [
+    "soldiers",
+    "zombies",
+    "pirates",
+    "robots"
+   ],
+   "reject": {
+    "3f0007b44b3e4b8d851c4395b60f4a42": "wrong_object: bare head",
+    "2717ed549521432aa6375d7aefb6ca02": "wrong_object: bust sculpture",
+    "a99c5fcf3fd1473f8901239a0c3ee70f": "wrong_object: bare head",
+    "80cca406e9494327877ed10cde9d1eb2": "broken: black untextured",
+    "1e055605729a4b9aa748f5508bd9e4dc": "broken: black silhouette statue",
+    "13b018d42f254567b64cb716229608d3": "broken: black untextured",
+    "fe39548e9eba43858280ef917cc816e3": "broken: black silhouette render"
+   }
+  },
+  {
+   "slug": "cats",
+   "noun": "cat",
+   "plural": "cats",
+   "title": "Free cat 3D models for three.js (GLB, CC BY)",
+   "query": "cat",
+   "words": [
+    "cat",
+    "kitten"
+   ],
+   "types": [
+    "creature-animal"
+   ],
+   "demand": [
+    {
+     "title": "Smelly Cat 🐈 | First Three.js Game",
+     "url": "https://discourse.threejs.org/t/12894",
+     "views": 4358,
+     "site": "discourse"
+    },
+    {
+     "title": "Miso 3D Cat - a tiny family-friendly Three.js toy",
+     "url": "https://discourse.threejs.org/t/miso-3d-cat-a-tiny-family-friendly-three-js-toy/92447",
+     "views": 281,
+     "site": "discourse"
+    }
+   ],
+   "notes": "The cats here run from house cats a few tenths of a metre tall to cat-people at 1.8 m in a suit, so check the height before placing one beside furniture. Toon (52) is the second most common style; those look right with `MeshToonMaterial` and a small `gradientMap` of a few grey steps, using `NearestFilter` so the bands stay hard.\n\nReal fur on a cat model is a painted texture, not strands. Fur drawn as stacked shells is expensive, and it rarely reads at game distance anyway.\n\nOf the 250 that pass the checks, 48 are rigged and 40 animated. An idle loop (breathing, a tail flick) on one `AnimationMixer` makes a cat in a scene feel alive at little cost. A cat that follows the player turns with `lookAt` on its parent group, which points the group's positive z axis at the target, the forward direction glTF uses.",
+   "related": [
+    "birds",
+    "fish",
+    "animated-animals",
+    "animals"
+   ],
+   "reject": {
+    "3a2a6761e9264a31a448d0ebdc237c61": "ip: Cartoon Cat creepypasta",
+    "ecc70acf6a9e42fab4b0173766082e33": "wrong_object: mouse on table",
+    "5364cb4548644cad9f5053f0a0827147": "poor: crude voxel blocks",
+    "4d6837029c354d74b51f32a9bdc8270a": "duplicate: T-pose cartoon cat like 19",
+    "9e2fdfd32ff84406908df18eaff64e79": "duplicate: recolor of cell 19"
+   }
+  },
+  {
+   "slug": "birds",
+   "noun": "bird",
+   "plural": "birds",
+   "title": "Free bird 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "bird",
+   "words": [
+    "bird",
+    "eagle",
+    "owl",
+    "parrot",
+    "crow",
+    "pigeon",
+    "duck",
+    "chicken",
+    "penguin"
+   ],
+   "types": [
+    "creature-animal"
+   ],
+   "demand": [
+    {
+     "title": "GPU birds example - Changing shape",
+     "url": "https://discourse.threejs.org/t/gpu-birds-example-changing-shape/3172",
+     "views": 4900,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A bird in flight follows a path: a `CatmullRomCurve3` through a few points, with `getPointAt(t)` for the position and `getTangentAt(t)` for the heading. `Object3D.lookAt` turns a model's positive z axis toward the target, which is glTF's forward, so point the bird at a point slightly ahead on the curve.\n\nWings that flap come from a clip: 65 birds are animated and 72 rigged. A flock of a few dozen is fine as cloned models with their own mixers; for hundreds, use a static bird in an `InstancedMesh` and move the instances, or write the flapping into the vertex shader, as the three.js GPU birds example does.\n\nSmall birds are about 0.3 m long at real size and disappear at a distance; scale them up with `height` if the camera stays far away. Stylized (219) and low-poly (115) lead here.",
+   "related": [
+    "cats",
+    "fish",
+    "animated-animals",
+    "animals"
+   ],
+   "reject": {
+    "c41b0a2930f4471dabd46bb10f10f7db": "wrong_object: platypus",
+    "1e73a70232e64459a1205d8f11b7238a": "duplicate: same as cell 16",
+    "e8a1808c9c0c40c18e5578df18e4c4bf": "duplicate: same as cell 16",
+    "fff744bef741439f9518cfd4daafe725": "poor: clay blob",
+    "9e72b3c82e7049fe96244415e2a98472": "wrong_object: parrot fish"
+   }
+  },
+  {
+   "slug": "fish",
+   "noun": "fish",
+   "plural": "fish",
+   "title": "Free fish 3D models for three.js (GLB, CC BY)",
+   "query": "fish",
+   "words": [
+    "fish",
+    "shark",
+    "whale",
+    "dolphin"
+   ],
+   "types": [
+    "creature-animal"
+   ],
+   "demand": [
+    {
+     "title": "Aquarium with small fish",
+     "url": "https://discourse.threejs.org/t/aquarium-with-small-fish/69001",
+     "views": 1700,
+     "site": "discourse"
+    },
+    {
+     "title": "Create custom Fish Geometry",
+     "url": "https://discourse.threejs.org/t/create-custom-fish-geometry/23495",
+     "views": 3590,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Several fish on this page share one base mesh of 3,562 triangles, textured differently by different authors, which makes a varied school cheap: one geometry, several materials. A school is an `InstancedMesh` per fish type, each instance turned to face its direction of travel.\n\nFish swim with their bodies. Without a clip, bend the tail in the vertex shader: in `onBeforeCompile`, offset each vertex sideways by a sine of the time and its position along the body, weighted so the head barely moves. Of these, 53 are animated and 50 rigged, and those swim from their own clips.\n\nUnderwater, `scene.fog = new THREE.FogExp2(color, density)` with a blue-green colour and a matching background hides the tank's far wall. Whales and sharks here are full size, up to 3 m, beside fish of 0.15 m, so check each card before putting them in one tank.",
+   "related": [
+    "cats",
+    "birds",
+    "animated-animals",
+    "animals"
+   ],
+   "reject": {
+    "ddbc02ad1d76486b9a88a69a3d408c73": "ip: Clash of Clans idea",
+    "55cc7fd238f44890bba562d72a3cba6e": "poor: crude blob",
+    "607dd388f0d84e6181be0834162304ea": "duplicate: like other disc fish",
+    "34b111e682f447faad4da9af3ca59f03": "poor: spacesuit character, not fish"
+   }
+  },
+  {
+   "slug": "animated-animals",
+   "noun": "animated animal",
+   "plural": "animated animals",
+   "title": "Free animated animal 3D models for three.js (GLB, CC BY)",
+   "query": "animated animal",
+   "types": [
+    "creature-animal"
+   ],
+   "animated": true,
+   "demand": [
+    {
+     "title": "Aquarium with small fish",
+     "url": "https://discourse.threejs.org/t/aquarium-with-small-fish/69001",
+     "views": 1700,
+     "site": "discourse"
+    },
+    {
+     "title": "Smelly Cat 🐈 | First Three.js Game",
+     "url": "https://discourse.threejs.org/t/12894",
+     "views": 4358,
+     "site": "discourse"
+    }
+   ],
+   "notes": "All 834 here are animated, and 683 of them rigged; the rest move by node or morph animation, which an `AnimationMixer` plays the same way. List a file's clips with `gltf.animations.map(a => a.name)` before wiring them, as names vary from author to author.\n\nAn animal walking across ground needs its pace matched to its speed. Set the walk action's `timeScale` from how fast the animal moves, so the feet stop sliding, and `crossFadeTo` the idle when it stops.\n\nSome animals here are very small at real size: a bee is 0.02 m and a springtail 0.003 m. Give `height` to `asset_search`'s pick to make one visible in a game. Dogs are well represented, in low-poly and realistic styles. None carries a 2048 px texture, and the median file is 0.3 MB.",
+   "related": [
+    "cats",
+    "birds",
+    "fish",
+    "animals"
+   ],
+   "reject": {
+    "48a915e2c4ce44239f0be46b5a3fafc4": "broken: empty render",
+    "ad4bf01b86fc43ac82565780e40470bf": "wrong_object: human girl",
+    "875ae29566a74cf0a117b786c4977946": "ip: Five Nights at Freddy's",
+    "046c5b9dd71340e3bf4b07327ed96b71": "duplicate: same as cell 8",
+    "f161272aebe34682bb0ff09ce7b76cc9": "broken: flat garbled render",
+    "ed0b0d8e0e1943198c7d95eb72189fe5": "broken: black untextured render"
+   }
+  },
+  {
+   "slug": "animals",
+   "noun": "animal",
+   "plural": "animals",
+   "title": "Free animal 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "animal",
+   "types": [
+    "creature-animal"
+   ],
+   "words": [
+    "animal"
+   ],
+   "demand": [
+    {
+     "title": "Cat dog dans green nature",
+     "url": "https://discourse.threejs.org/t/50184",
+     "views": 616,
+     "site": "discourse"
+    },
+    {
+     "title": "Aquarium with small fish",
+     "url": "https://discourse.threejs.org/t/aquarium-with-small-fish/69001",
+     "views": 1700,
+     "site": "discourse"
+    },
+    {
+     "title": "Smelly Cat 🐈 | First Three.js Game",
+     "url": "https://discourse.threejs.org/t/12894",
+     "views": 4358,
+     "site": "discourse"
+    }
+   ],
+   "notes": "A scene with several animals reads better when they share a style. The page mixes stylized (644), low-poly (439) and realistic (291), so pass `style` to `asset_search` to keep a farm or a zoo in one look.\n\nAnimals stand on four feet, so a soft shadow under each one grounds it: a `DirectionalLight` with `castShadow`, its shadow camera fitted tightly around the area where the animals stand, gives sharper shadows than one stretched over the whole map. The bottom-centre origin puts each animal's feet on the ground where you place it.\n\nOf the 1,715 that pass the checks, 297 are animated and 301 rigged; the rest are fixed poses that suit a diorama or a field seen from afar. A herd of a static animal can be one `InstancedMesh`, each copy with its own position, turn and slight scale change.",
+   "related": [
+    "cats",
+    "birds",
+    "fish",
+    "animated-animals"
+   ],
+   "reject": {
+    "f3cb6791b6dd4064a5c8ab98d3ff5f01": "broken: tiny garbled render",
+    "a2a9d279102c40eaa6e18d8d8e22dc17": "broken: half white untextured",
+    "9061ee27feba4aa18ed42aefa3723e9f": "wrong_object: fish",
+    "8447d936455f44b982b3489e0df686cc": "broken: tiny black silhouette"
+   }
+  },
+  {
+   "slug": "voxel",
+   "noun": "voxel model",
+   "plural": "voxel models",
+   "title": "Free voxel 3D models for three.js (GLB, CC BY)",
+   "query": "voxel",
+   "styles": [
+    "voxel"
+   ],
+   "demand": [
+    {
+     "title": "Voxel Painter 2: Simple, Minecraft-style 3d building for the web",
+     "url": "https://discourse.threejs.org/t/voxel-painter-2-simple-minecraft-style-3d-building-for-the-web/30231",
+     "views": 4513,
+     "site": "discourse"
+    },
+    {
+     "title": "Free voxel editing software made with threejs",
+     "url": "https://discourse.threejs.org/t/free-voxel-editing-software-made-with-threejs/12967",
+     "views": 2258,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Voxel models are tiny files (0.03 MB in the median, 1,660 triangles) coloured by vertex colours or a small palette. Keep the blocks sharp: set `NearestFilter` on any palette texture and use `flatShading: true`, or a `MeshLambertMaterial`, so each face is one even colour.\n\nA level built from many voxel props draws fast when the static ones are merged. `mergeGeometries` from `three/addons/utils/BufferGeometryUtils.js` joins geometries that have the same attributes into one mesh; apply each prop's world matrix to its geometry first, and merge per material.\n\nHard voxel edges show shadow acne, striped dark lines across lit faces. Raise the light's `shadow.normalBias` a little until the stripes go. Many of these are characters at human height (1.7 m in the median), and 109 are rigged; a voxel character's limbs often move as whole blocks.",
+   "related": [
+    "scanned",
+    "sci-fi",
+    "low-poly",
+    "cc0"
+   ],
+   "reject": {
+    "37f8f5da08d84380b3106f6e77887971": "broken: garbled texture",
+    "9f032883d73f40b7b04a54a09cdd8579": "broken: white blob",
+    "4322cf487c3c4a59a70b3b99ddea9d63": "poor: unreadable blocks"
+   }
+  },
+  {
+   "slug": "scanned",
+   "noun": "photogrammetry scan",
+   "plural": "photogrammetry scans",
+   "title": "Free photogrammetry (scanned) 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "photogrammetry scan",
+   "styles": [
+    "scanned"
+   ],
+   "demand": [
+    {
+     "title": "Gltf photogrammetry",
+     "url": "https://discourse.threejs.org/t/gltf-photogrammetry/42564",
+     "views": 1022,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Photogrammetry scans are dense: the median model has 61,200 triangles and the upper quarter over 117,100. Before a scene holds several, run `model_audit` on the folder, and use its `shrink` to cap textures for distant ones. A page with many scans is worth a `perf` run on the budget it targets.\n\nA scan's colour texture already contains the light of the place it was captured in, shadows and all. Lit by strong lights in three.js, it gets lit twice. Use soft light: an environment map at modest intensity and little or no direct light, or `MeshBasicMaterial` for a scan that should look exactly as captured.\n\n`Raycaster` checks each triangle, so picking a dense scan is slow; test against a box or a simpler mesh instead. 207 of these are CC0, many from museums, and the median scan is 0.25 m tall.",
+   "related": [
+    "voxel",
+    "sci-fi",
+    "low-poly",
+    "cc0"
+   ],
+   "reject": {
+    "c89d0f20cb9e421c94606540df665d82": "broken: black render",
+    "605e4d63ca1f40c0827d5244c490b482": "broken: black render",
+    "81f15f537f1140dabd62e4097f9166fe": "broken: tiny garbled",
+    "2f42722313cc4c48861f43d1a4950834": "duplicate: same as cell 5",
+    "914e98ea8e794062933d97ecc9ee5733": "duplicate: snowman like cell 16"
+   }
+  },
+  {
+   "slug": "sci-fi",
+   "noun": "sci-fi model",
+   "plural": "sci-fi models",
+   "title": "Free sci-fi 3D models for three.js (GLB, CC BY)",
+   "query": "sci-fi prop",
+   "styles": [
+    "sci-fi"
+   ],
+   "demand": [
+    {
+     "title": "Sci-fi Scene that I made",
+     "url": "https://discourse.threejs.org/t/sci-fi-scene-that-i-made/9176",
+     "views": 7159,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Sci-fi models lean on light they make themselves: emissive strips, screens and engines. Give those parts an `emissive` colour and `emissiveIntensity` above 1, and add `UnrealBloomPass` with a threshold that lets the glowing parts bloom while the hull stays crisp. Tone mapping (`renderer.toneMapping = THREE.ACESFilmicToneMapping`) keeps the bright parts from clipping to flat white.\n\nHolograms and shields are additive, see-through materials: `transparent: true`, `blending: THREE.AdditiveBlending`, `depthWrite: false`, and a scrolling texture offset for scan lines.\n\nThe page mixes props, weapons, characters, buildings and craft, from a 0.1 m fragment to a 100 m dreadnought. Of the 2,785 that pass the checks, 61 carry a 2048 px texture and 70 are AI-generated. Hard-surface panels depend on their normal maps, so keep those when you cap textures with `shrink`.",
+   "related": [
+    "voxel",
+    "scanned",
+    "low-poly",
+    "cc0"
+   ],
+   "reject": {
+    "2ca8d4fbb25d49cb9da094549ed4ffaa": "ip: Han Solo blaster",
+    "411d3a1921654f4a877e75c823da88f8": "poor: plain black box",
+    "30a8d2a9c45d4ba6a824334c8f4f4f51": "ip: War Robots mech",
+    "b4ec6c5726694cb8a6316bae7928037c": "wrong_object: ring"
+   }
+  },
+  {
+   "slug": "low-poly",
+   "noun": "low-poly model",
+   "plural": "low-poly models",
+   "title": "Free low-poly 3D models for three.js (GLB, CC BY)",
+   "query": "low poly",
+   "styles": [
+    "low-poly"
+   ],
+   "demand": [
+    {
+     "title": "Using a different (low poly) mesh for shadows?",
+     "url": "https://discourse.threejs.org/t/using-a-different-low-poly-mesh-for-shadows/13163",
+     "views": 1997,
+     "site": "discourse"
+    },
+    {
+     "title": "Low poly model - ugly shadows",
+     "url": "https://discourse.threejs.org/t/low-poly-model-ugly-shadows/16858",
+     "views": 1744,
+     "site": "discourse"
+    },
+    {
+     "title": "Low-Poly Terrain Demo (WIP)",
+     "url": "https://discourse.threejs.org/t/low-poly-terrain-demo-wip/33859",
+     "views": 5190,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Low-poly files are small (1,720 triangles and 0.06 MB in the median), so the cost of a low-poly scene is usually draw calls, not triangles. A level of many separate props can be merged per material with `mergeGeometries`, and repeated ones drawn as an `InstancedMesh`.\n\nThe faceted look depends on face normals. A model exported with smooth normals looks soft; `flatShading: true` on its material restores the facets. Models coloured per vertex need `vertexColors: true`, which GLTFLoader sets when the file has colours.\n\nFaceted surfaces under a shadow-casting light show stripes of shadow acne. Raise the light's `shadow.normalBias` slightly, and fit the shadow camera tightly around the play area so the shadow map's texels stay small. The page holds vehicles, plants, food, characters and buildings; 718 are rigged, and filtering with `type` in `asset_search` narrows the mix.",
+   "related": [
+    "voxel",
+    "scanned",
+    "sci-fi",
+    "cc0"
+   ],
+   "reject": {
+    "e87d9b96bd534135b635e39f92b4c635": "poor: black untextured cars"
+   }
+  },
+  {
+   "slug": "cc0",
+   "noun": "CC0 model",
+   "plural": "CC0 models",
+   "title": "Free CC0 3D models for three.js (GLB, no credit needed)",
+   "query": "cc0",
+   "license": "CC0-1.0",
+   "demand": [
+    {
+     "title": "📦 Importable base64 encoded CC0 assets for THREEJS",
+     "url": "https://discourse.threejs.org/t/importable-base64-encoded-cc0-assets-for-threejs/52766",
+     "views": 559,
+     "site": "discourse"
+    }
+   ],
+   "notes": "These 351 models are all CC0: no credit is required, and you may change and sell them. `asset_search` still writes a line to `CREDITS.md` with each pick, which you can keep as a courtesy or delete.\n\nMost come from museum collections: 204 are scans and 139 realistic models of vessels, tools, insects and statues, with no rigged models and 4 animated. They are dense, with a median of 62,900 triangles, so a gallery of several should be checked with `model_audit` and paced with `perf`.\n\nA museum piece shows well on a turntable: `OrbitControls` with `autoRotate`, an environment map for soft light, and the camera framed to the model's bounds from `new THREE.Box3().setFromObject(model)`. The median object is 0.25 m tall, so set the camera's near plane small enough for a close look. `look` with `target` pictures one model from several sides.",
+   "related": [
+    "voxel",
+    "scanned",
+    "sci-fi",
+    "low-poly"
+   ],
+   "reject": {
+    "081f588b9ca24a0ea5ed79ee3d7bed47": "broken: black vase"
+   }
+  },
+  {
+   "slug": "animated",
+   "noun": "animated model",
+   "plural": "animated models",
+   "title": "Free animated 3D models for three.js (GLB, CC BY and CC0)",
+   "query": "animated",
+   "animated": true,
+   "demand": [
+    {
+     "title": "Can I apply a mixamo animation to another model that has already been rigged?",
+     "url": "https://discourse.threejs.org/t/can-i-apply-a-mixamo-animation-to-another-model-that-has-already-been-rigged/28846",
+     "views": 4340,
+     "site": "discourse"
+    },
+    {
+     "title": "How to play animation not circular (animate with scroll)",
+     "url": "https://discourse.threejs.org/t/38565",
+     "views": 1173,
+     "site": "discourse"
+    },
+    {
+     "title": "Simple character controller with animations",
+     "url": "https://discourse.threejs.org/t/simple-character-controller-with-animations/53542",
+     "views": 3320,
+     "site": "discourse"
+    }
+   ],
+   "notes": "Animated does not always mean a character here: a trolley, storage boxes, a computer and a solar system move too, by node animation that an `AnimationMixer` plays as it plays a skeleton. Of the 4,921, 3,350 are rigged.\n\nA one-shot animation, such as a lid opening on a click, plays with `setLoop(THREE.LoopOnce)` and `clampWhenFinished = true`, and `reset().play()` runs it again. For an animation driven by scroll instead of time, call `action.play()` and set `action.paused = true`, then on each scroll set `action.time = progress * clip.duration` and call `mixer.update(0)`.\n\nA clip made for one skeleton plays on another when the bone names match. Every frame needs `mixer.update(dt)` with the time since the last frame, from `THREE.Timer` or `performance.now()`. The heights here vary widely, from small props to an entry listed at 60 m, so check each card's height before you place it.",
+   "related": [
+    "voxel",
+    "scanned",
+    "sci-fi",
+    "low-poly"
+   ],
+   "reject": {
+    "b6e83864053141969a2ed53608aaf37e": "poor: tiny dog",
+    "d39c050aaa204333a0dbd8259066376d": "broken: white blob",
+    "a0ed5cb020eb4b3db4c754dbc4f34ff4": "broken: tiny render",
+    "291679e37ca94e8cae32b393f4f90c59": "ip: Batter from OFF",
+    "753100e6d73b4356b89ac7984283c7f7": "duplicate: crate like cell 2",
+    "5d0e67370dd14d5ab2423406080369c6": "broken: black garbled textures"
+   }
+  }
+ ]
+}

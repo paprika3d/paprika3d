@@ -2,6 +2,7 @@
 title: React Three Fiber MCP server: see and test your R3F three.js scene
 phrase: react three fiber mcp server
 description: paprika3d is an MCP server for React Three Fiber. It runs your R3F app's Vite dev server, screenshots the canvas, lists the named meshes on screen, presses keys on exact frames and reads the scene or your game state back as JSON, so a coding agent can check the R3F scene it wrote.
+meta: A React Three Fiber MCP server: paprika3d lets your coding agent open an R3F scene, see what is on screen, play it and read its state.
 intent: react-three-fiber-mcp-server
 queries:
   - "React Three Fiber MCP server"

@@ -42,14 +42,31 @@
     // `open` / `perf` `network`: real ms after navigation of the first render to the screen (not to a target)
     if (h.firstFrameAt === undefined && e.target === null) h.firstFrameAt = realNow();
   };
-  // Real time (performance.now is the harness's clock) and a GPU sync: a 1-pixel read in the bound framebuffer's own
-  // read format waits for the work queued before it (a float target refuses an 8-bit read, which would not wait).
+  // Real time (performance.now is the harness's clock) and a GPU sync: a 1-pixel clear and read of a framebuffer of the
+  // harness's own waits for all the work queued before it. A read of the bound framebuffer did not: after a multisampled
+  // target's resolve three binds none, and the canvas, unwritten yet, read at once, so the next pass took the scene's GPU
+  // time (a 7.7 ms pass read 0.3, the 64×32 pass after it 7.8: #191); a multisampled or float one refused the read.
   const realNow = () => Performance.prototype.now.call(performance);
+  const own = new WeakMap(), px = new Uint8Array(4);
   const sync = (r) => {
     const gl = r.getContext?.();
-    if (typeof gl?.readPixels !== "function") return;
-    const type = gl.getParameter(gl.IMPLEMENTATION_COLOR_READ_TYPE), float = type === gl.FLOAT || type === gl.HALF_FLOAT || type === 0x8d61;
-    gl.readPixels(0, 0, 1, 1, gl.RGBA, float ? gl.FLOAT : gl.UNSIGNED_BYTE, float ? new Float32Array(4) : new Uint8Array(4));
+    if (typeof gl?.readPixels !== "function" || gl.isContextLost()) return;
+    const two = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
+    const binds = two ? [[gl.DRAW_FRAMEBUFFER, gl.DRAW_FRAMEBUFFER_BINDING], [gl.READ_FRAMEBUFFER, gl.READ_FRAMEBUFFER_BINDING]] : [[gl.FRAMEBUFFER, gl.FRAMEBUFFER_BINDING]];
+    const was = binds.map(([, b]) => gl.getParameter(b)), scissor = gl.isEnabled(gl.SCISSOR_TEST), discard = two && gl.isEnabled(gl.RASTERIZER_DISCARD);
+    const mask = gl.getParameter(gl.COLOR_WRITEMASK), colour = gl.getParameter(gl.COLOR_CLEAR_VALUE);
+    let fb = own.get(gl);
+    if (!fb || !gl.isFramebuffer(fb)) {
+      const rb = gl.createRenderbuffer(), rb0 = gl.getParameter(gl.RENDERBUFFER_BINDING);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, rb); gl.renderbufferStorage(gl.RENDERBUFFER, two ? gl.RGBA8 : gl.RGBA4, 1, 1); gl.bindRenderbuffer(gl.RENDERBUFFER, rb0);
+      own.set(gl, fb = gl.createFramebuffer()); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, rb);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.disable(gl.SCISSOR_TEST); if (discard) gl.disable(gl.RASTERIZER_DISCARD);
+    gl.colorMask(true, true, true, true); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    // the page's state as it was: three's state cache holds these and does not read them back
+    binds.forEach(([t], i) => gl.bindFramebuffer(t, was[i])); if (scissor) gl.enable(gl.SCISSOR_TEST); if (discard) gl.enable(gl.RASTERIZER_DISCARD);
+    gl.colorMask(...mask); gl.clearColor(...colour);
   };
   // A WebGPU device has no blocking read: sync() waits on its queue (a promise), and passes are timed by timestamp queries.
   // A WebGPURenderer not initialised yet (a second one for thumbnails) has no device, and nothing to wait for: it threw,
@@ -71,14 +88,17 @@
     for (const t of h.timing ?? []) if (t.uids) { t.ms = t.uids.reduce((s, [r, u]) => s + (pool(r)?.timestamps.get(u) ?? 0), 0); delete t.uids; }
   };
   // What a pass drew, for `perf`: the scene's name, "main scene", or the first object of a small scene (a
-  // full-screen quad) or the object drawn alone (EffectComposer's quad) by its material's name or type.
+  // full-screen quad) or the object drawn alone (EffectComposer's quad) by its material's name or type. A ShaderPass
+  // whose shader has no name is three's "unspecified": named by its uniforms, as five passes of the 2026-10-28 demo read alike.
+  const matName = (m) => m.name && m.name !== "unspecified" ? m.name
+    : [m.type, ...(m.uniforms ? [Object.keys(m.uniforms).filter(k => k !== "tDiffuse").slice(0, 3).join(", ")].filter(Boolean) : [])].join(" with uniforms ");
   const what = (o) => {
     if (o?.name) return o.name;
     if (o?.isScene && h.main()?.[0] === o) return "main scene";
     const one = o?.isScene ? (o.children.length <= 2 ? o.children[0] : null) : o;
     if (!one) return o?.isScene ? `scene of ${o.children.length} objects` : "object";
     const m = [one.material].flat()[0];
-    return `${o?.isScene ? "scene: " : ""}${one.name || one.type}${m ? ` (${m.name || m.type})` : ""}`;
+    return `${o?.isScene ? "scene: " : ""}${one.name || one.type}${m ? ` (${matName(m)})` : ""}`;
   };
   const watch = (r) => {
     const render = r.render, clear = r.clear;

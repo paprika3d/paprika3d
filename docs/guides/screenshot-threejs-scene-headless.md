@@ -2,6 +2,7 @@
 title: Screenshot a three.js scene headless from a coding agent
 phrase: screenshot a three.js scene headless
 description: How a coding agent takes a screenshot of a three.js or WebGL canvas in headless Chrome, gets the list of objects on screen with it, and pictures one object from four sides, using the paprika3d plugin's open and look tools.
+meta: Screenshot a three.js scene headless from a coding agent: one call opens the page, the next returns the picture and the named objects on screen.
 intent: screenshot-threejs-headless
 queries:
   - "Three.js: How can I make a 2D SnapShot of a Scene as a JPG Image?"

@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.3.0 (2026-10-29)
+
+A minor version because the tool list changes: the `optimize` tool folds into `perf` (below), so the stable build lists
+15 tools. The stable build ships readable bundles and the TypeScript they are built from under `source/`, and CONTRIBUTING.md
+takes outside changes with a DCO sign-off. `look`'s z-fighting check covers every mesh on a heavy page (all 103 of a
+100-mesh test page in about 100 ms, where it checked 0 to 76) and, when it still reaches its limit, says `Surfaces: not
+checked for N of M meshes` where the Surfaces line goes (#161). That check counts its work instead of timing itself, so a busy machine names the same fights as an idle one: timed, the Studio at load 20-36 named a fight in only 22-27 of 63 flicker cells (#196). Each open deletes the pictures and clips in all but the
+newest 10 run folders (#74). A `perf` variant samples 2 s against the baseline's 4 s, so a 5-variant call takes about
+28 s instead of 40 (#163). On a software renderer, each clock frame waits for the GPU, so looks stop hitting the 180 s
+timeout (#25). The `look` and `interact` schemas are shorter (the tool list is 13% smaller) and the `threejs-game` skill
+is about half its size, with the detail in `references/tools.md`. `paprika-make` asks its questions, has a subagent find
+reference pictures the person confirms, and writes the brief before any page file; `paprika-loop` starts only when the
+person types it. The `open` reply says geo.js and fx.js are replaced only when the plugin's copy changes. The README
+puts the result and install first; the tool, skill and hook tables are on the docs site's plugin page. The after-edit
+hook's once-per-session line that a three.js page has not been opened also comes for a page a shell command wrote (a
+heredoc or a generator script), found under the session's folder as one changed since the session began (#188). `open`
+loads at session start under Claude Code's tool search, which otherwise shows each MCP tool by name only until the agent
+searches for it: its tools/list entry carries `_meta: {"anthropic/alwaysLoad": true}`, which Claude Code 2.1.285 and
+later read. The `optimize` tool is now `perf` with `optimize: true`: it measures, tries the @paprika3d/three-runtime
+switches (`resolution`, `defaults`, `instancing`, `lod`, `dispose`) one at a time, keeps those that help in
+`game-runtime.json`, and ends with the final `test` of `game-tests.json` when the project has one. With
+`optimize: true`, `perf` takes only `budget`, and the `switches` option is gone. The MCP server starts about a quarter
+faster (117 to 85 ms on an M3 Air): it and the hooks run through Node's on-disk compile cache (Node 22.8 and later). A
+`look` zoom on a scrolled page shows the box the look listed there, not the part of the page above it, and leaves the
+page's scroll where it was (#193). The picture in a tool reply is at most 1,024 pixels wide, not 1,280,
+about 850 tokens a look instead of 1,330 (a vision eval on 133 assets found Sonnet's defect recall no lower). The after-edit hook no longer says a three.js page has not been opened when an `open` of it ran in the same batch of tool calls as the write: it reads that `open`'s reply from the hook's own input, since Claude Code adds a batch's results to the transcript up to 100 ms after the hook starts (#194).
+
+Once per install and per update, at the MCP client's first `initialize`, the server sends the install id, the plugin
+version, OS and Node version and the client's name and version, so the team can count installs; nothing about the
+project, and `DO_NOT_TRACK=1` or `PAPRIKA3D_TELEMETRY=0` turns it off, as for `send_feedback` (the README's what leaves
+your machine and SECURITY.md say so). `perf` samples frames as a browser runs them, letting the GPU run at most two
+frames behind, instead of waiting for the GPU every frame, which read a frame as its CPU and GPU time added (#191); its
+pass times sync on a 1x1 framebuffer the harness owns, so the pass after a multisampled target's resolve is no longer
+charged the heavy pass's GPU time; a WebGPURenderer with no device yet no longer stops every frame stamp; and a pass
+whose material is three's ShaderPass default is named by its uniforms, not `(unspecified)`. `look` says a subject the
+ID image cannot find (drawn by its own shader, or see-through) has its share not measured, instead of `drew no pixel`.
+The `interact`, `look` and `perf` descriptions name their siblings and say what fails and what persists.
+`paprika-make` and `paprika-loop` ask one question for each of what it is, what it must have, its controls and its
+pictures that the request leaves open, so a detailed request gets one or two, and a request that names no pictures
+starts the reference subagent before the first question. A `paprika-loop` judge marks a Next item it asked for before
+`(asked again)` and names the one tool call that shows it done, and when the last three judges gave the same score the
+next builder's prompt says so. The stable build carries SECURITY.md (founders@keeno.dev, the latest release only) and,
+in the public repo, a Dockerfile so Glama can run the server and list its tools. `paprika3d check` prints an opt-in
+`Tested with paprika3d` line under its plain report with `PAPRIKA3D_TESTED_WITH=1`, for a report pasted into a PR. Five
+one-task skills, `threejs-screenshot`, `threejs-play`, `threejs-test`, `threejs-perf` and `threejs-glb-audit`, sit
+beside `threejs-game`, so `npx skills add paprika3d/paprika3d --skill <name>` installs one. `asset_search`'s library
+holds 57,732 models, with the 549 from Scenario's 3D Collection.
+
 ## 0.2.4 (2026-10-27)
 
 `templates/viewer.html` sets `NeutralToneMapping` after `stage()`, so a swatch and the material it names read as one

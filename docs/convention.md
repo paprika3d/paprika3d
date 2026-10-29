@@ -4,7 +4,7 @@ description: The window.__game convention a three.js game exposes so paprika3d c
 ---
 # The window.__game convention
 
-Any three.js, React Three Fiber or WebGL page can be opened, looked at and driven without it: `open`, `look`, `observe` (which falls back to the page's named three.js objects), `eval`, `interact` with keys, mouse and touch, `feel`, `perf` and `optimize` work on a page that knows nothing about the harness. To read and set a game's exact state, the game also exposes `window.__game`.
+Any three.js, React Three Fiber or WebGL page can be opened, looked at and driven without it: `open`, `look`, `observe` (which falls back to the page's named three.js objects), `eval`, `interact` with keys, mouse and touch, `feel` and `perf` work on a page that knows nothing about the harness. To read and set a game's exact state, the game also exposes `window.__game`.
 
 <!-- include: skills/threejs-game/SKILL.md#The `window.__game` convention -->
 

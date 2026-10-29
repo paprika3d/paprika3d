@@ -1,0 +1,17 @@
+{
+  "name": "@paprika3d/game-fx",
+  "version": "0.1.0",
+  "description": "Sound effects, canvas textures, particle bursts, a first-load stage, metre-scale texture coordinates and rule-based placement for three.js games and pages, made in code: no audio files, image files or editors.",
+  "keywords": ["threejs", "three.js", "game", "gamedev", "procedural", "sfx", "audio", "texture", "particles", "paprika3d"],
+  "homepage": "https://paprika3d.com/docs",
+  "repository": { "type": "git", "url": "git+https://github.com/paprika3d/paprika3d.git" },
+  "author": { "name": "Keeno" },
+  "private": true,
+  "type": "module",
+  "main": "./dist/fx.js",
+  "types": "./src/index.ts",
+  "exports": { ".": { "types": "./src/index.ts", "default": "./dist/fx.js" } },
+  "files": ["dist", "src"],
+  "scripts": { "build": "bun build.ts" },
+  "peerDependencies": { "three": ">=0.159" }
+}

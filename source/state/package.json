@@ -1,0 +1,50 @@
+{
+  "name": "@paprika3d/game-state",
+  "version": "0.1.0",
+  "description": "Deterministic game state for three.js games: state in fixed-size arrays, a generated window.__game, rewind, and Rapier physics in a worker.",
+  "keywords": [
+    "threejs",
+    "three.js",
+    "webgl",
+    "game",
+    "gamedev",
+    "state",
+    "deterministic",
+    "rapier",
+    "physics",
+    "rewind",
+    "paprika3d"
+  ],
+  "homepage": "https://paprika3d.com/docs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paprika3d/paprika3d.git"
+  },
+  "author": {
+    "name": "Keeno"
+  },
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "bun build.ts"
+  },
+  "main": "./dist/game-state.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/game-state.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "@dimforge/rapier3d-deterministic-compat": "0.21.0"
+  },
+  "peerDependencies": {
+    "three": ">=0.159"
+  }
+}

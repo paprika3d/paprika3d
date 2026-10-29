@@ -1,6 +1,7 @@
 ---
 title: Publish a three.js page to paprika3d.app | paprika3d docs
 description: paprika3d's publish tool puts a page your agent built on a public https://<name>.paprika3d.app link. An invite-only preview: how to get a code, use it, and what a publish uploads and records.
+meta: paprika3d's publish tool puts a three.js page your agent built on a public paprika3d.app link. An invite-only preview: how to get a code.
 ---
 # Publishing
 

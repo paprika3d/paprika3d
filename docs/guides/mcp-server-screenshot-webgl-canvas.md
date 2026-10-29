@@ -2,6 +2,7 @@
 title: MCP server that screenshots a WebGL canvas, for three.js pages
 phrase: mcp server that screenshots a webgl canvas
 description: paprika3d is an MCP server that screenshots a WebGL canvas. Its look tool returns the picture of a three.js, React Three Fiber or WebGL page inside the tool result, as an image the model reads, with the named objects on screen and their pixel boxes.
+meta: An MCP server that screenshots a WebGL canvas: paprika3d opens your three.js page in headless Chrome and returns the picture and what is on screen.
 intent: mcp-server-screenshot-webgl-canvas
 queries:
   - "MCP server screenshot WebGL canvas"

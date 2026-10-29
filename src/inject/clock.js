@@ -179,6 +179,13 @@
     for (const cb of cbs.values()) try { cb(now); } catch (e) { reportError(e); } // one throw must not skip the rest, as in a browser
   }
 
+  // On a software renderer (cfg.software, set by the harness once it knows) every frame, stepped or real-time, ends with
+  // a GPU sync: with --disable-frame-rate-limit and the compositor on SwiftShader nothing paces frames to the GPU, so 60
+  // paused steps left 38 s of GPU work for the next call to pay and a running page's screenshot never came (#25). A GPU
+  // pays nothing: there the sync cost 3% and slowed sheets (docs/optimize-log.md).
+  const sync = () => cfg.software ? window.__harness?.sync() : undefined;
+  const realTick = () => new Promise(ok => { const c = new MessageChannel(); c.port1.onmessage = () => { c.port1.close(); ok(); }; c.port2.postMessage(0); });
+
   // One pump chain per resume: resume, pause and resume again within one real frame left the first chain's start
   // pending, and both ran (half the frames with dt 0).
   let chain = 0;
@@ -190,6 +197,7 @@
     if (!running || c !== chain) return;
     const began = realNow();
     frame((t - last) * scale);
+    Promise.resolve(sync()).catch(() => {}); // WebGPU's sync is a promise; a lost device must not raise a page error
     last = t;
     const wait = pace - (realNow() - began);
     if (pace && wait > 1) realSetTimeout(() => realRaf(pump(c)), wait - 1); // the frame comes a little after the timer
@@ -211,6 +219,7 @@
     async step(n = 1, dt = 1000 / 60) {
       booting = false;
       stepping++;
+      let yielded = realNow();
       try { for (let i = 0; i < n; i++) {
         frame(dt);
         // a browser runs every microtask before the next frame; a callback that awaits an async function needs a few
@@ -218,6 +227,12 @@
         for (let k = 0; k < 16; k++) await null;
         const h = held; held = [];
         if (h.length) await Promise.all(h.map(settle));
+        if (cfg.software) {
+          await sync();
+          // a synced step is one main-thread task as long as its frames' GPU work: a real task each second lets
+          // guarded()'s ping answer, which reads 30 s of silence as hung
+          if (realNow() - yielded > 1000) { await realTick(); yielded = realNow(); }
+        }
       } } finally { stepping--; }
       return now;
     },
@@ -228,7 +243,7 @@
     /** Resolves after ms of real time, paused or not. */
     realSleep: (ms) => new Promise(ok => realSetTimeout(ok, ms)),
     /** Resolves on the next real task: a MessageChannel message, which Chrome does not clamp as it does a nested setTimeout(0). */
-    realTick: () => new Promise(ok => { const c = new MessageChannel(); c.port1.onmessage = () => { c.port1.close(); ok(); }; c.port2.postMessage(0); }),
+    realTick,
     /** How many timers and animation frames were ever scheduled: a change while paused means code waits on the clock. */
     scheduled: () => nextTimer + nextFrame,
     paused: () => !running && !stepping, // a step in progress (the eval's own code stepping) is moving the clock

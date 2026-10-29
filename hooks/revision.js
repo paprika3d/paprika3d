@@ -1,1 +1,13 @@
-import{readFileSync as A,renameSync as B,rmSync as C}from"node:fs";import{join as D}from"node:path";import{json as E}from"node:stream/consumers";var G=await E(process.stdin).catch(()=>null),z=D(process.env.CLAUDE_PROJECT_DIR||G?.cwd||".","paprika-loop",".revision"),g=`${z}.${process.pid}`;try{B(z,g)}catch{process.exit(0)}var q=A(g,"utf8").trim();C(g,{force:!0});if(q)console.log(JSON.stringify({hookSpecificOutput:{hookEventName:"PostToolUse",additionalContext:q}}));
+import { readFileSync, renameSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { json } from "node:stream/consumers";
+var input = await json(process.stdin).catch(() => null), file = join(process.env.CLAUDE_PROJECT_DIR || input?.cwd || ".", "paprika-loop", ".revision"), taken = `${file}.${process.pid}`;
+try {
+  renameSync(file, taken);
+} catch {
+  process.exit(0);
+}
+var text = readFileSync(taken, "utf8").trim();
+rmSync(taken, { force: !0 });
+if (text)
+  console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: text } }));

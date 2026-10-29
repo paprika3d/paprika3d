@@ -18,7 +18,7 @@ When the user says "use paprika3d to playtest" (or "playtest it", "look at it", 
    frame) and read the state before and after; a `{ wait }` step steps time.
 4. **Eval:** `eval` runs JavaScript in the page with `scene`, `camera`, `renderer`, `find(name)` and
    `stats(target)` in scope, to check sizes, materials and positions or try a change before writing it into the source.
-5. Fix, then look again. `perf` when performance matters; `optimize` only when a reply says the frame is over
+5. Fix, then look again. `perf` when performance matters, with `optimize: true` only when a reply says the frame is over
    budget or the user asks.
 
 ## The `window.__game` convention
@@ -41,7 +41,8 @@ match `event.code`.
 ## More
 
 - The full method, its reference files (plain three.js, React Three Fiber, Rapier) and rules: `skills/threejs-game/SKILL.md`,
-  with `references/geometry.md` and `references/optimize.md` beside it.
+  with `references/geometry.md` and `references/optimize.md` beside it. One task each: `skills/threejs-screenshot/`,
+  `threejs-play/`, `threejs-test/`, `threejs-perf/` and `threejs-glb-audit/`.
 - The `open` tool puts `geo.js` (booleans, hull, extrude, revolve, seeded scatter) and `fx.js` (sound effects, canvas
   textures, particle bursts, a first-load stage, texture coordinates, placement rules) in the project.
 - With no page open: `reference` reads a picture the page should match (`compare` puts the open page beside it),

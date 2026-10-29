@@ -1,10 +1,10 @@
 # Game effects: fx.js
 
-The `open` tool puts `fx.js` in the project root, next to `geo.js`. It holds a first-load setup (`stage`), canvas textures (`tex`), terrain and rule-based placement (`field`, `place`, `instances`), synthesized sound (`sfx`), particles (`burst`), camera shake (`shake`) and metre-scale texture coordinates (`uv`). Pure JS with no files to load. Nothing in it reads `Math.random`: the same `seed` gives the same pixels, points, particles and samples. Never edit it; this page lists its API.
+The `open` tool puts `fx.js` in the project root, next to `geo.js`. It holds a first-load setup (`stage`), canvas textures (`tex`), terrain and rule-based placement (`field`, `place`, `instances`), synthesized sound (`sfx`), particles (`burst`), camera shake (`shake`), metre-scale texture coordinates (`uv`), a reference picture's camera with its pixel-to-world maps (`picture`), a subtree baked to GLB bytes (`bake`), and a picture's outlines and heights (`trace`, `heightfield`). Pure JS with no files to load. Nothing in it reads `Math.random`: the same `seed` gives the same pixels, points, particles and samples. Never edit it; this page lists its API.
 
 ```js
 import * as THREE from "three";
-import { stage, tex, field, place, instances, sfx, burst, shake, uv } from "./fx.js";   // "../fx.js" from src/ in a vite project
+import { stage, tex, field, place, instances, sfx, burst, shake, uv, picture, bake, trace, heightfield } from "./fx.js";   // "../fx.js" from src/ in a vite project
 ```
 
 ## stage

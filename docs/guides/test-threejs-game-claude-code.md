@@ -2,6 +2,7 @@
 title: Test a three.js game with Claude Code
 phrase: test a three.js game with claude code
 description: How Claude Code tests a three.js game with the paprika3d plugin. It opens the game in headless Chrome on a paused clock, looks at it, presses keys on exact frames and reads the state back as JSON through window.__game.
+meta: Test a three.js game with Claude Code: send keys and clicks on a paused clock, read the game state after each step, and save checks that rerun.
 intent: test-threejs-game-input
 queries:
   - "test three.js game claude code"

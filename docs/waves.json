@@ -1,0 +1,401 @@
+{
+ "about": "Each data page (models/<slug>, errors/<slug>) with its wave and the date it goes out. site/build.ts builds a page once its date is on or before the build date (SITE_DATE overrides it), so about 30 pages go out a week. Wave 1 is the pages with the most demand behind them: the error pages by the views of the threads that quote the message, the model pages by their top thread's views and the agent picks in the library, spread over kinds of model so one week is not all characters.",
+ "pages": {
+  "errors/camera-is-not-an-instance-of-three-camera": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/computed-radius-is-nan": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/error-creating-webgl-context": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/fbxloader-map-is-not-supported": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/fbxloader-more-than-4-skinning-weights": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/material-is-not-a-property": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/multiple-instances-of-three-js": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/object3d-add-not-an-instance": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/objloader-unexpected-line": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/pointerlockcontrols-unable-to-use-pointer-lock-api": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/raycaster-unsupported-camera-type": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/shader-error-validate-status-false": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/texture-has-been-resized": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/texture-marked-for-update-but-image-is-incomplete": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/texture-marked-for-update-but-no-image-data-found": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/webgl-context-could-not-be-created": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/animated": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/animated-characters": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/books": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/cars": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/characters": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/flowers": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/houses": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/kitchen": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/low-poly": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/plants": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/sci-fi": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/tanks": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/terrain": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/trees": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/voxel": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "errors/dracoloader-decoding-failed": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/fbxloader-tga-loader-not-found": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/fbxloader-unknown-format": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/mergegeometries-compatible-attributes": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/objectloader-cant-parse": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/objectloader-undefined-texture": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/propertybinding-no-target-node-found": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/srgb-encoded-textures-have-to-use-rgbaformat-and-unsignedbytetype": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/trying-to-use-texture-units": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/unable-to-use-normalized-textures-without-ext-texture-norm16": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/animals": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/animated-animals": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/birds": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/boats": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/bottles": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/cabinets": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/candles": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/cats": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/chairs": {
+   "wave": 1,
+   "date": "2026-10-28"
+  },
+  "models/crystals": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/cups": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/doors": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/fish": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/guns": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/helmets": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/low-poly-characters": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/palm-trees": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/planets": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/rigged-characters": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/scanned": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/swords": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "models/trucks": {
+   "wave": 2,
+   "date": "2026-10-28"
+  },
+  "errors/audio-is-already-playing": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/buffer-attribute-size-does-not-match": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/can-not-resolve-include": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/clock-module-has-been-deprecated": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/gltfloader-json-content-not-found": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/gltfloader-unknown-extension": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/pcfsoftshadowmap-has-been-removed": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/propertybinding-cannot-parse-trackname": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/tononindexed-already-non-indexed": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/unsupported-compressed-texture-format": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/airplanes": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/barrels": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/bathroom": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/burgers": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/castles": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/cc0": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/coins": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/drones": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/furniture": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/guitars": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/islands": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/pirates": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/robots": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/rocks": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/shoes": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/skulls": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/sofas": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/soldiers": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/spaceships": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/vases": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/windmills": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "models/zombies": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/gltfloader-is-not-a-constructor-cdn": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/three-geometry-is-not-a-constructor": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/outputencoding-has-been-removed": {
+   "wave": 3,
+   "date": "2026-10-28"
+  },
+  "errors/not-part-of-the-three-namespace": {
+   "wave": 3,
+   "date": "2026-10-28"
+  }
+ }
+}

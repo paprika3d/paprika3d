@@ -1,10 +1,10 @@
-# Performance: `perf`, `optimize` and the runtime layer
+# Performance: `perf` and the runtime layer
 
 ## `perf`
 
 Measures the open game uncapped in headless Chrome: median and p95 frame time, the work per frame (paused frames timed to the end of their GPU work: a frame that draws nothing new waits for the display's 60 Hz tick there, so a page that skips renders is judged on its work), draw calls, triangles and the size of the asset files the page and its running workers fetched, against a budget. `desktop` (the default) is 16.7 ms a frame, 5 MB of assets, 200,000 triangles, 2048 px textures and a pixel ratio of at most 2. A `budget` argument overrides it.
 
-## `optimize`
+## `perf` with `optimize: true`
 
 Tries each switch of `@paprika3d/three-runtime` on the open game, one at a time, on top of the ones already kept:
 
@@ -24,12 +24,12 @@ The report also lists image and `.glb` files under the project folder whose text
 
 ## Adding the runtime layer
 
-When the game does not import the runtime yet, `optimize` puts the built runtime in the project root as `three-runtime.js` and says so. Import it (`import { install } from "./three-runtime.js"`, or `"../three-runtime.js"` from `src/`) and call `install()` at the top of the entry file, before the renderer is made. Never read, copy or edit that file: it is a 110 KB minified bundle the harness keeps current. It does nothing until `optimize` has chosen switches. Then reopen the game with the `open` tool and call `optimize` again.
+When the game does not import the runtime yet, `perf` with `optimize: true` puts the built runtime in the project root as `three-runtime.js` and says so. Import it (`import { install } from "./three-runtime.js"`, or `"../three-runtime.js"` from `src/`) and call `install()` at the top of the entry file, before the renderer is made. Never read, copy or edit that file: it is a 110 KB minified bundle the harness keeps current. It does nothing until switches are kept: `perf` with `optimize: true` tries them once the game, reopened with the `open` tool, imports the runtime.
 
 The layer must be imported by the game itself (only the game's own copy of three can be patched):
 
 ```js
-import { install } from './three-runtime.js';   // optimize puts it in the project root; never read it
+import { install } from './three-runtime.js';   // perf with optimize: true puts it in the project root; never read it
 install();                                     // before the renderer is made
 ```
 

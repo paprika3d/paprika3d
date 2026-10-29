@@ -1,0 +1,51 @@
+{
+  "name": "@paprika3d/game-geo",
+  "version": "0.1.0",
+  "description": "Procedural geometry for three.js games: Manifold booleans, hull, extrude and revolve, and seeded scatter, in one file with the wasm inlined.",
+  "keywords": [
+    "threejs",
+    "three.js",
+    "webgl",
+    "game",
+    "gamedev",
+    "procedural",
+    "geometry",
+    "csg",
+    "manifold",
+    "boolean",
+    "mesh",
+    "paprika3d"
+  ],
+  "homepage": "https://paprika3d.com/docs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paprika3d/paprika3d.git"
+  },
+  "author": {
+    "name": "Keeno"
+  },
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/geo.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./dist/geo.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun build.ts"
+  },
+  "dependencies": {
+    "manifold-3d": "3.5.4"
+  },
+  "peerDependencies": {
+    "three": ">=0.159"
+  }
+}

@@ -2,6 +2,7 @@
 title: Find out why a three.js model is not visible
 phrase: three.js model is not visible
 description: A three.js object that never shows up is usually at the wrong scale, behind the camera, or never loaded. How a coding agent finds which, with the paprika3d plugin's look, eval and open replies.
+meta: Find out why a three.js model is not visible: wrong scale, behind the camera, or never loaded. How a coding agent finds which, with paprika3d.
 intent: threejs-object-not-visible
 queries:
   - "Three.JS OBJ Model not showing"
@@ -9,6 +10,13 @@ queries:
   - "Why is the LittlestTokyo.glb model so small?"
   - "Three JS FBX Loader: model not visible in the scene No errors in the console"
   - "THREE.GLTFLoader: No DRACOLoader instance provided"
+  - "Three JS not rendering anything at all. It's all a black screen"
+  - "Three.js code not working in browsers"
+  - "Trying to make a GLB/GLTF appear"
+  - "three.js - how to limit the zooming so that object does not break due to camera"
+  - "Three.js - Things disappear when zooming out"
+  - "Moving the camera model will shake if the coordinates are large"
+  - "shaderMaterial: render-order with logarithmicDepthBuffer is wrong"
 author: paprika3d agent
 date: 2026-10-14
 review: weekly
@@ -175,6 +183,179 @@ Next: `look` to see it, then `interact` for each interaction the request names.
 ```
 
 The `Failed to load` line names the file and its status, and `entities` is empty because nothing was added to the scene. A Draco-compressed model loaded without a `DRACOLoader` logs `THREE.GLTFLoader: No DRACOLoader instance provided.` as a console error, which appears in the same `Errors so far` block, or in the `errors` list of the next `observe` if it arrives after the page opened.
+
+## Why is my three.js scene a black screen with nothing rendered?
+
+A first scene that shows nothing but black, with no error in the console, is the same question asked of the whole page, and the same replies answer it. This is the scene part of a first page as the forum threads post it, and as an agent often writes it; the renderer and the import map are the parking-lot page's:
+
+```js
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
+
+const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0x44aa88 }));
+cube.name = 'cube';
+scene.add(cube);
+
+renderer.setAnimationLoop(() => {
+  cube.rotation.y += 0.01;
+  renderer.render(scene, camera);
+});
+```
+
+These replies were captured on 2026-10-28 on a Linux server with no GPU, where Chrome draws in software (SwiftShader); nothing here depends on it. They are cut to the lines this section discusses, with nothing reworded.
+
+```text
+look {}
+
+Pixels: brightness 0%, colour saturation 0%, 100% near black, 0% blown out. Mostly black: a blank or unlit frame? Pale: little colour.
+On screen (0):
+Never visible: cube (1.01 units, in view)
+In view but no pixel: too small for the scene (check its size against the scene), hidden behind something, or not drawn.
+
+eval {"code": "const lights = []; scene.traverse(o => { if (o.isLight) lights.push(o.type); }); return { camera: camera.position.toArray(), cube: find(\"cube\").position.toArray(), lights }"}
+
+{"camera":[0,0,0],"cube":[0,0,0],"lights":[]}
+```
+
+The page has two faults, and the frame hides both. A new camera and a new mesh both start at the origin, so the camera is inside the cube, where every face points away from it and is culled. The `Never visible` hint does not name this case: the cube is "in view" because the camera is inside its box, and it is the positions from `eval` that show it. The second fault waits behind the first:
+
+```text
+eval {"code": "camera.position.set(0, 1, 3); camera.lookAt(0, 0, 0); return \"moved\""}
+
+moved
+
+look {}
+
+Pixels: brightness 0%, colour saturation 0%, 100% near black, 0% blown out; 0% of the picture changed since the last look. Mostly black: a blank or unlit frame? Pale: little colour.
+Hues: grey 100% of the frame; over the objects (7% of it): grey 100%.
+On screen (1):
+cube 7% [504, 274, 777, 554]
+```
+
+The cube now covers 7% of the frame, and 0% of the picture changed: it is drawn black on a black background. A `MeshStandardMaterial` shows the light that reaches it and nothing more, and the scene has none (`lights: []`). A `MeshBasicMaterial` ignores lights, which is why tutorials that start with one show a colour here.
+
+```text
+eval {"code": "scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 3)); return \"lit\""}
+
+lit
+
+look {}
+
+Pixels: brightness 3%, colour saturation 4%, 93% near black, 0% blown out; 8% of the picture changed since the last look. Mostly black: the objects cover 7% of the frame.
+Hues: grey 93%, green 7% of the frame; over the objects (7% of it): green 100%.
+```
+
+The `Pixels` line changed its note from "a blank or unlit frame?" to "the objects cover 7% of the frame", its way of saying a dark background with a lit object in it. The fix in the source is the two changes tried here: a camera position set back from the scene, and a light.
+
+A black page can also be a script that never ran. Without the import map, the same page stops at its first line, and `open` says so in place of the usual reply:
+
+```text
+open {"url": "index.html", "cwd": "<project>"}
+
+game not ready after 10 s: no window.__game, three.js renderer or WebGL canvas on http://127.0.0.1:35385/index.html
+Failed to resolve module specifier "three". Relative references must start with either "/", "./", or "../".
+```
+
+A canvas with no height is the third way to a blank page with no error; `open` names it on its own line, and [the responsive canvas guide](/guides/threejs-responsive-canvas-resize) shows that reply and its fix.
+
+## Why do three.js objects disappear when zooming in or out?
+
+A camera draws what lies between its near and far planes and nothing else, the third and fourth arguments of `PerspectiveCamera`. Zoom out until an object is further away than `far`, and it vanishes whole; move in closer than `near`, and the faces nearest the camera are cut open. This harbour page has a far plane of 100 and a lighthouse further out than that:
+
+```html
+<!-- verify -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Harbour</title>
+<style>html,body{margin:0;overflow:hidden}canvas{display:block}</style></head>
+<body>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa8d0f0);
+// far = 100 leaves out the lighthouse at z = -150
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 6, 20);
+camera.lookAt(0, 4, -100);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x335577, 2));
+
+const sea = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({ color: 0x2f6f9f }));
+sea.name = 'sea';
+sea.rotation.x = -Math.PI / 2;
+scene.add(sea);
+
+const boat = new THREE.Mesh(new THREE.BoxGeometry(6, 2, 2), new THREE.MeshStandardMaterial({ color: 0xc8553d }));
+boat.name = 'boat';
+boat.position.set(-4, 1, 0);
+scene.add(boat);
+
+const lighthouse = new THREE.Mesh(new THREE.CylinderGeometry(3, 4, 30), new THREE.MeshStandardMaterial({ color: 0xf2efe6 }));
+lighthouse.name = 'lighthouse';
+lighthouse.position.set(10, 15, -150);
+scene.add(lighthouse);
+
+renderer.setAnimationLoop(() => renderer.render(scene, camera));
+</script>
+</body></html>
+```
+
+```text
+look {}
+
+World's edge: 6% of the picture is background below the horizon, in [0, 386, 1279, 436], past the far end of the ground: extend the ground, keep the camera over it, or fade it out with scene.fog.
+On screen (2):
+sea 43% [0, 437, 1279, 799] 400 × 400 units
+boat 2.8% [325, 549, 598, 654] 6 × 2 units, across the view
+Never visible: lighthouse (30 units, behind the camera)
+
+eval {"code": "const l = find(\"lighthouse\"); return { near: camera.near, far: camera.far, lighthouse: +camera.position.distanceTo(l.position).toFixed(1) }"}
+
+{"near":0.1,"far":100,"lighthouse":170.5}
+```
+
+Read the `Never visible` line with care here: the lighthouse is in front of the camera, 170.5 units away, and `look` reports it as "behind the camera". Today `look` gives the same label to an object behind the camera and one beyond the far plane, so when a named object is "behind the camera" in a picture that faces it, compare its distance with `camera.far` as the `eval` above does. The `World's edge` line has the same blind spot: the sea is 400 units across, and the sky band under the horizon is where the far plane cut it, not where it ends.
+
+To see the "disappears when I zoom out" thread's fault, `look` with `cameras` pictures the same moment from several distances in one call, as `OrbitControls` would place the camera when zooming out:
+
+```text
+look {"cameras": [{"position": [-4, 8, 30], "lookAt": [-4, 1, 0], "label": "close"}, {"position": [-4, 30, 80], "lookAt": [-4, 1, 0], "label": "zoomed out"}, {"position": [-4, 50, 120], "lookAt": [-4, 1, 0], "label": "further"}]}
+
+close: on screen: sea, boat; world's edge 9% of the picture; pixels: brightness 47%, colour saturation 58%, 0% near black, 0% blown out
+zoomed out: on screen: sea, boat; world's edge 34% of the picture; pixels: brightness 53%, colour saturation 53%, 0% near black, 0% blown out
+further: on screen: sea; world's edge 58% of the picture; pixels: brightness 62%, colour saturation 45%, 0% near black, 0% blown out
+```
+
+At the third distance the boat is gone and most of the sea is cut away. The fix is a far plane that covers the furthest the camera can be from the furthest thing it should see, tried in the page first; the camera labels are kept, so the second call names them:
+
+```text
+eval {"code": "camera.far = 1000; camera.updateProjectionMatrix(); return \"far 1000\""}
+
+far 1000
+
+look {}
+
+World's edge: 3% of the picture is background below the horizon, in [0, 386, 1279, 408], past the far end of the ground: extend the ground, keep the camera over it, or fade it out with scene.fog.
+On screen (3):
+sea 46% [0, 409, 1279, 799] 400 × 400 units
+boat 2.8% [325, 549, 598, 654] 6 × 2 units, across the view
+lighthouse 0.53% [670, 262, 710, 416] 30 × 8 units
+Never visible: none
+
+look {"cameras": ["close", "zoomed out", "further"]}
+
+close: on screen: sea, boat, lighthouse; world's edge 4% of the picture; pixels: brightness 45%, colour saturation 60%, 0% near black, 0% blown out
+zoomed out: on screen: sea, lighthouse, boat; world's edge 12% of the picture; pixels: brightness 43%, colour saturation 62%, 0% near black, 0% blown out
+further: on screen: sea, lighthouse, boat; world's edge 18% of the picture; pixels: brightness 43%, colour saturation 61%, 0% near black, 0% blown out
+```
+
+Changing `near` or `far` takes `camera.updateProjectionMatrix()` to apply, which is the line most often left out. The other half of the fix is a limit on the zoom: `OrbitControls` takes `minDistance` and `maxDistance`, so the camera can never come closer than the near plane allows or go further than the far plane reaches. A `scene.fog` that ends before `far` hides the edge where things are cut.
+
+A far plane cannot simply be made huge, because the depth buffer's precision is spread between `near` and `far` and most of it sits close to `near`. Pushing `near` down is what costs precision: faces a little apart in the distance start to flicker through each other. `look`'s `Surfaces` line names such pairs with the gap the depth buffer needs at their distance, and [the z-fighting guide](/guides/threejs-z-fighting-flicker) shows that gap growing as `near` shrinks. For a scene that needs both (a city, a planet), `logarithmicDepthBuffer: true` on the renderer spreads the precision out; a custom `ShaderMaterial` then needs three's `logdepthbuf` shader chunks to write the same depth as the built-in materials, which is what the render-order thread runs into. Vertices that shake at large coordinates are a different limit, the precision of 32-bit floats far from the origin, which no near or far value changes and none of these replies measures; the usual fix keeps the camera near the origin and moves the world instead.
 
 ## What to read in the replies
 

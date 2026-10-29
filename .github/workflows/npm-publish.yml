@@ -31,5 +31,7 @@ jobs:
           [[ "$GITHUB_REF_NAME" == "$want" ]] || { echo "::error::tag $GITHUB_REF_NAME does not match package.json ($want)"; exit 1; }
       # the build marks itself private so a clone is never published by accident
       - run: npm pkg delete private
-      # verbose shows the OIDC exchange: on a refused exchange npm logs the registry's reason and falls back to no token
-      - run: npm publish --access public --loglevel verbose
+      # verbose shows the OIDC exchange: on a refused exchange npm logs the registry's reason and falls back to no token.
+      # Trusted publishing turns provenance on by itself ("oidc Enabling provenance" in v0.2.3's log); --provenance says
+      # so here and fails the publish rather than ship a version without its attestation
+      - run: npm publish --access public --provenance --loglevel verbose

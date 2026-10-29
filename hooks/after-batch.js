@@ -1,8 +1,410 @@
-import{createRequire as Aq}from"node:module";var Dq=Object.create;var{getPrototypeOf:Kq,defineProperty:g,getOwnPropertyNames:Hq}=Object;var Mq=Object.prototype.hasOwnProperty;function Eq(q){return this[q]}var Lq,_q,Yz=(q,z,G)=>{var Q=q!=null&&typeof q==="object";if(Q){var J=z?Lq??=new WeakMap:_q??=new WeakMap,Z=J.get(q);if(Z)return Z}G=q!=null?Dq(Kq(q)):{};let $=z||!q||!q.__esModule?g(G,"default",{value:q,enumerable:!0}):G;for(let B of Hq(q))if(!Mq.call($,B))g($,B,{get:Eq.bind(q,B),enumerable:!0});if(Q)J.set(q,$);return $};var Wz=(q,z)=>()=>(z||q((z={exports:{}}).exports,z),z.exports);var Iq=(q)=>q;function Nq(q,z){this[q]=Iq.bind(null,z)}var Pz=(q,z)=>{for(var G in z)g(q,G,{get:z[G],enumerable:!0,configurable:!0,set:Nq.bind(z,G)})};var c=(q,z)=>()=>(q&&(z=q(q=0)),z);var Kz=Aq(import.meta.url);import{readdirSync as Fq,readFileSync as Rq,realpathSync as o,statSync as a}from"node:fs";import{extname as bq,join as L,sep as Oq}from"node:path";import{createHash as d}from"node:crypto";function vq(q,{assets:z=!1}={}){let G=d("sha256"),Q=d("sha256");return jq(q,(J,Z)=>{if(!Z){G.update(`${J}\x00`),G.update(Rq(L(q,J))),G.update("\x00");return}let $=a(L(q,J)),B=`${J}\x00${$.size}\x00${$.mtimeMs}\x00`;if(G.update(B),z)Q.update(B)}),{sources:G.digest("hex"),assets:Q.digest("hex")}}function jq(q,z){let G,Q=new Set,J=($)=>{try{let B=a(L(q,$));if(!B.isDirectory())return{dir:!1,file:B.isFile()};let V=o(L(q,$)),X=G??=o(q);if(V===X||V.startsWith(X+Oq)||Q.has(V))return{dir:!1,file:!1};return Q.add(V),{dir:!0,file:!1}}catch{return{dir:!1,file:!1}}},Z=($)=>{let B=Fq(L(q,$),{withFileTypes:!0}).sort((V,X)=>V.name<X.name?-1:V.name>X.name?1:0);for(let V of B){let X=$?`${$}/${V.name}`:V.name;if(kq.has(X)||Cq(V.name,B)||/\.md$/i.test(V.name))continue;let{dir:O,file:j}=V.isSymbolicLink()?J(X):{dir:V.isDirectory(),file:V.isFile()};if(O){if(!V.name.startsWith(".")&&!xq.has(V.name))Z(X)}else if(j)z(X,Tq.has(bq(V.name).toLowerCase()))}};Z("")}var xq,kq,Cq=(q,z)=>q==="game-state.js"||q==="physics-worker.js"&&z.some((G)=>G.name==="game-state.js"),Tq,i=(q)=>vq(q).sources;var n=c(()=>{xq=new Set(["node_modules","dist","build"]),kq=new Set(["paprika3d","paprika-loop","geo.js","fx.js","three-runtime.js","game-contract.json","game-tests.json","game-runtime.json","public/game-runtime.json"]),Tq=new Set([".png",".jpg",".jpeg",".gif",".webp",".avif",".bmp",".ico",".ktx2",".basis",".dds",".hdr",".exr",".glb",".gltf",".bin",".fbx",".obj",".blend",".mp3",".ogg",".wav",".m4a",".mp4",".webm",".woff",".woff2",".ttf",".otf",".wasm",".zip"])});import{closeSync as gq,existsSync as yq,mkdirSync as mq,openSync as wq,readFileSync as Sq,renameSync as uq,rmSync as s,statSync as t,writeFileSync as y}from"node:fs";import{homedir as fq}from"node:os";import{dirname as hq,join as _}from"node:path";function Fz(){return process.env.PAPRIKA3D_HOME||_(fq(),".paprika3d")}function I(q){try{return{...r(),...JSON.parse(Sq(e(q),"utf8"))}}catch{return r()}}function oq(q){let z=_(q,"paprika3d"),G=_(z,".gitignore");if(!yq(G))mq(z,{recursive:!0}),y(G,`*
-`);return z}function x(q,z){let G=e(q);oq(q);let Q=`${G}.lock`,J=Date.now()+pq;for(;;)try{gq(wq(Q,"wx"));break}catch(Z){if(Z.code!=="EEXIST")throw Z;try{if(Date.now()-t(Q).mtimeMs>cq)s(Q,{force:!0})}catch{}if(Date.now()>J)throw Error(`state.json is locked: ${Q}`);Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,5)}try{let Z=I(q);return z(Z),y(`${G}.tmp`,JSON.stringify(Z,null,2)),uq(`${G}.tmp`,G),Z}finally{s(Q,{force:!0})}}function Rz(q,z,G){return x(q,(Q)=>{if(Q.lastFingerprint!==z)Q.iterations++;if(Q.lastFingerprint=z,G.failing)m(Q,z,G.failing);Q.runs=[...Q.runs,G].slice(-lq)})}function m(q,z,G){let Q=q.lastCheck?.failing??[];q.lastCheck={fingerprint:z,failing:G,changed:Q.length!==G.length||!G.every((J)=>Q.includes(J))}}function bz(q,z,G){return x(q,(Q)=>{Object.assign(Q,{contractHash:z,issued:G,lastFingerprint:null,lastCheck:null,iterations:0})})}function Oz(q){let z=new Date,{cwd:G,...Q}=q;y(_(t(q.picture,{throwIfNoEntry:!1})?.isDirectory()?q.picture:hq(q.picture),"run.json"),JSON.stringify({...Q,start:new Date(z.getTime()-q.durationMs).toISOString(),end:z.toISOString()},null,2))}var lq=200,pq=1e4,cq=30000,r=()=>({contractHash:null,issued:null,lastFingerprint:null,lastCheck:null,iterations:0,url:null,command:null,server:null,runs:[]}),e=(q)=>_(q,"paprika3d","state.json");var w=()=>{};n();w();import{existsSync as T,readFileSync as sq,realpathSync as rq,writeFileSync as tq}from"node:fs";import{tmpdir as eq}from"node:os";import{dirname as v,extname as qz,join as F,resolve as W,sep as zz}from"node:path";import{spawnSync as Bq}from"node:child_process";import{json as Gz}from"node:stream/consumers";w();async function qq(q,z,G=I(q).server){if(!G)return null;let Q;try{Q=await fetch(`http://127.0.0.1:${G.port}/check`,{method:"POST",body:JSON.stringify({token:G.token,...z})})}catch{return null}if(Q.status===500)throw Error((await Q.json()).error);return Q.ok?await Q.json():null}import{existsSync as zq,readdirSync as dq,readFileSync as aq,statSync as iq}from"node:fs";import{dirname as nq,join as Gq}from"node:path";var jz=(q)=>{try{return iq(q).mtimeMs}catch{return 0}};function Qq(q,z){if(typeof q!=="string"||!zq(q))return null;let G=Gq(nq(q),z,"subagents"),Q=[q,...zq(G)?dq(G).filter(($)=>$.endsWith(".jsonl")).map(($)=>Gq(G,$)):[]],J=new Set,Z=new Set;for(let $ of Q){let B=aq($,"utf8");for(let V of B.matchAll(/"type":"tool_use","id":"([^"]+)","name":"mcp__plugin_paprika3d_paprika__\w+"/g))J.add(V[1]);for(let V of B.split(`
-`)){let X=V.indexOf('"tool_result"');if(X<0||V.includes('"tool_result"',X+1))continue;let O=/"tool_use_id":"([^"]+)"/.exec(V)?.[1];if(!O||!J.has(O))continue;for(let j of V.matchAll(/(?:Run folder|Picture): (\/[^"\\]*?\/paprika3d\/runs\/[^"\\/]+)/g))Z.add(j[1])}}return[...Z]}var Qz=new Set(["Edit","Write","NotebookEdit"]),U=await Gz(process.stdin).catch(()=>null);if(!U)process.exit(0);var Jq=U.tool_calls??(U.tool_name?[U]:[]),H=Jq.filter((q)=>Qz.has(q.tool_name)).map((q)=>({ref:q.tool_use_id??"",file:String(q.tool_input?.file_path??q.tool_input?.notebook_path??"")})).filter((q)=>q.file),Uq=Jq.filter((q)=>q.tool_name==="Bash"),f=U.agent_id?`${U.session_id}/${U.agent_id}`:String(U.session_id??""),Vz="paprika3d: this three.js page has not been opened in this session. `open` runs it in headless Chrome on a paused clock, `look` shows what a viewer sees, and `interact` plays it and returns the state.",Zz=/from\s*["'](?:three|three\/[^"']+|@react-three\/[^"']+)["']|import\s*\(\s*["']three["']|require\(\s*["']three["']\)|["']three["']\s*:|three\.module(?:\.min)?\.js|\/build\/three\./,$z=(q)=>{try{return sq(q,"utf8")}catch{return""}};if(!H.length&&!Uq.length)process.exit(0);var D=process.argv.includes("--contract"),Xq=D?"game-contract.json":"game-tests.json";function Vq(q){for(let z=W(q);;z=v(z)){if(T(F(z,Xq))||!D&&T(F(z,"paprika3d","state.json")))return z;if(v(z)===z)return null}}var Y=H.map((q)=>Vq(v(W(U.cwd??".",q.file)))).find(Boolean)??Vq(U.cwd??".");function Yq(q){let z=process.env.CLAUDE_PID?Bq("ps",["-o","args=","-p",process.env.CLAUDE_PID],{encoding:"utf8"}).stdout:"";if(/(^|\s)(-p|--print)(\s|$)/.test(z)&&!/--input-format[ =]stream-json/.test(z))console.log(JSON.stringify({hookSpecificOutput:{hookEventName:U.hook_event_name??"PostToolBatch",additionalContext:q}})),process.exit(0);console.error(q),process.exit(2)}var h=(q)=>{try{return rq(q)}catch{return q}},Bz=(q)=>h(W(q,"..","..","..")),S,Wq=()=>S!==void 0?S:S=Qq(U.transcript_path,String(U.session_id??""))?.map(Bz)??null;function l(){if(!H.length)process.exit(0);let q=F(eq(),`paprika3d-reminded-${f.replace(/[^\w.-]/g,"_")}`);if(!H.some((Z)=>/\.(html|jsx?|tsx?)$/.test(Z.file)&&Zz.test($z(W(U.cwd??".",Z.file))))||T(q))process.exit(0);tq(q,"");let G=[U.cwd??".",...H.map((Z)=>v(W(U.cwd??".",Z.file)))],Q=Wq();if(!!Q&&G.some((Z)=>{let $=h(W(Z));return Q.some((B)=>$===B||$.startsWith(B+zz))}))process.exit(0);Yq(Vz)}if(!Y)l();var E=I(Y),b=T(F(Y,Xq));if(!b&&(!E.server||Wq()?.includes(h(Y))===!1))l();if(!E.url&&!E.command)process.exit(0);var Pq=i(Y);if(E.lastCheck?.fingerprint===Pq)process.exit(0);var k=H.at(-1)??{ref:Uq.at(-1).tool_use_id??"",file:""},N={ref:k.ref,file:k.file?W(U.cwd??".",k.file):"",time:new Date().toISOString(),session:f},M="",P="",p=0;try{let q=await qq(Y,{edit:N,...!D&&{tests:b,faults:!0}},E.server);if(q)M=JSON.stringify(q)}catch(q){P=`paprika3d check: ${q.message}`,p=1}if(!M&&!P){if(!b)l();let q=F(import.meta.dirname,"../src",`cli${qz(import.meta.filename)}`),z=Bq(process.execPath,[q,"check","--cwd",Y,"--json","--edit-ref",N.ref,...N.file?["--edit-file",N.file]:[],"--edit-time",N.time,"--session",f],{encoding:"utf8",maxBuffer:67108864,timeout:170000,killSignal:"SIGKILL"});if({stdout:M="",stderr:P="",status:p}=z,z.signal==="SIGKILL")M="",P=`paprika3d check: did not finish in 170 s: a keypoint's page may hang; run \`${D?"check":"test"}\` to see which`}var R,A,C;if(M.trim())({changed:R,text:A,faults:C}=JSON.parse(M));else if(P.includes("paprika3d check: game not ready"))process.exit(0);else{if(!b)process.exit(0);A=P.trim().split(`
-`).filter((q)=>q.startsWith("paprika3d")).join(`
-`)||P.trim()||`paprika3d check exited ${p}`,R=x(Y,(q)=>m(q,Pq,[A])).lastCheck.changed}R&&=b;var K=C?.closed.length||C?.opened.length?C:void 0;if(!R&&!K)process.exit(0);var u=k.file?"edit":"shell command",Zq=new Set(E.lastCheck?.failing??[]),$q=D?[]:A.split(`
-`).flatMap((q)=>{let z=/^([✓✗]) ([\w-]+)(?:: (.*))?$/.exec(q);return!z?[]:z[1]==="✗"?[`${z[2]} ${Zq.has(z[2])?"still fails":"now fails"} (${z[3]})`]:[`${z[2]} ${Zq.has(z[2])?"now passes":"still passes"}`]}),Jz=A.split(`
-`).filter((q)=>!q.startsWith("Frames:")||q.includes("over budget")),Uz=!R?[]:$q.length?[`game-tests.json after your ${u}: ${$q.join("; ")}. \`test\` reruns them.`]:[`${D?"Game contract":"Saved checks (game-tests.json)"} after your ${u} (the failing ${D?"keypoints":"checks"} changed):`,...Jz],Xz=!K?[]:[`Fault lines after your ${u}, on the freshly reloaded page, without a picture (a fault that needs play to show is not seen here):`,...K.closed.map((q)=>`  closed: ${q}`),...K.opened.map((q)=>`  new: ${q}`),...K.open.filter((q)=>!K.opened.includes(q)).map((q)=>`  still open: ${q}`)];Yq([...Uz,...Xz].join(`
+import { createRequire } from "node:module";
+var __create = Object.create;
+var { getPrototypeOf: __getProtoOf, defineProperty: __defProp, getOwnPropertyNames: __getOwnPropNames } = Object;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+function __accessProp(key) {
+  return this[key];
+}
+var __toESMCache_node, __toESMCache_esm, __toESM = (mod, isNodeMode, target) => {
+  var canCache = mod != null && typeof mod === "object";
+  if (canCache) {
+    var cache = isNodeMode ? __toESMCache_node ??= /* @__PURE__ */ new WeakMap : __toESMCache_esm ??= /* @__PURE__ */ new WeakMap, cached = cache.get(mod);
+    if (cached)
+      return cached;
+  }
+  target = mod != null ? __create(__getProtoOf(mod)) : {};
+  let to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: !0 }) : target;
+  for (let key of __getOwnPropNames(mod))
+    if (!__hasOwnProp.call(to, key))
+      __defProp(to, key, {
+        get: __accessProp.bind(mod, key),
+        enumerable: !0
+      });
+  if (canCache)
+    cache.set(mod, to);
+  return to;
+};
+var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __returnValue = (v) => v;
+function __exportSetter(name, newValue) {
+  this[name] = __returnValue.bind(null, newValue);
+}
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, {
+      get: all[name],
+      enumerable: !0,
+      configurable: !0,
+      set: __exportSetter.bind(all, name)
+    });
+};
+var __esm = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
+var __require = /* @__PURE__ */ createRequire(import.meta.url);
+
+import { readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { extname, join, sep } from "node:path";
+import { createHash } from "node:crypto";
+function fingerprints(cwd, { assets = !1 } = {}) {
+  let h = createHash("sha256"), ha = createHash("sha256");
+  return sourceFiles(cwd, (path, binary) => {
+    if (!binary) {
+      h.update(`${path}\x00`), h.update(readFileSync(join(cwd, path))), h.update("\x00");
+      return;
+    }
+    let st = statSync(join(cwd, path)), line = `${path}\x00${st.size}\x00${st.mtimeMs}\x00`;
+    if (h.update(line), assets)
+      ha.update(line);
+  }), { sources: h.digest("hex"), assets: ha.digest("hex") };
+}
+function sourceFiles(cwd, visit) {
+  let real, linked = /* @__PURE__ */ new Set, follow = (path) => {
+    try {
+      let st = statSync(join(cwd, path));
+      if (!st.isDirectory())
+        return { dir: !1, file: st.isFile() };
+      let to = realpathSync(join(cwd, path)), root = real ??= realpathSync(cwd);
+      if (to === root || to.startsWith(root + sep) || linked.has(to))
+        return { dir: !1, file: !1 };
+      return linked.add(to), { dir: !0, file: !1 };
+    } catch {
+      return { dir: !1, file: !1 };
+    }
+  }, walk = (rel) => {
+    let entries = readdirSync(join(cwd, rel), { withFileTypes: !0 }).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+    for (let e of entries) {
+      let path = rel ? `${rel}/${e.name}` : e.name;
+      if (SKIP_TOP.has(path) || isStoreCopy(e.name, entries) || /\.md$/i.test(e.name))
+        continue;
+      let { dir, file } = e.isSymbolicLink() ? follow(path) : { dir: e.isDirectory(), file: e.isFile() };
+      if (dir) {
+        if (!e.name.startsWith(".") && !SKIP_DIRS.has(e.name))
+          walk(path);
+      } else if (file)
+        visit(path, BINARY.has(extname(e.name).toLowerCase()));
+    }
+  };
+  walk("");
+}
+var SKIP_DIRS, SKIP_TOP, isStoreCopy = (name, entries) => name === "game-state.js" || name === "physics-worker.js" && entries.some((e) => e.name === "game-state.js"), BINARY, fingerprint = (cwd) => fingerprints(cwd).sources;
+var init_fingerprint = __esm(() => {
+  SKIP_DIRS = /* @__PURE__ */ new Set(["node_modules", "dist", "build"]), SKIP_TOP = /* @__PURE__ */ new Set(["paprika3d", "paprika-loop", "geo.js", "fx.js", "three-runtime.js", "game-contract.json", "game-tests.json", "game-runtime.json", "public/game-runtime.json"]), BINARY = /* @__PURE__ */ new Set([
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".avif",
+    ".bmp",
+    ".ico",
+    ".ktx2",
+    ".basis",
+    ".dds",
+    ".hdr",
+    ".exr",
+    ".glb",
+    ".gltf",
+    ".bin",
+    ".fbx",
+    ".obj",
+    ".blend",
+    ".mp3",
+    ".ogg",
+    ".wav",
+    ".m4a",
+    ".mp4",
+    ".webm",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".wasm",
+    ".zip"
+  ]);
+});
+
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync as readFileSync2, renameSync, rmSync, statSync as statSync2, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join as join2 } from "node:path";
+function harnessHome() {
+  return process.env.PAPRIKA3D_HOME || join2(homedir(), ".paprika3d");
+}
+function readState(cwd) {
+  try {
+    return { ...empty(), ...JSON.parse(readFileSync2(file(cwd), "utf8")) };
+  } catch {
+    return empty();
+  }
+}
+function harnessDir(cwd) {
+  let dir = join2(cwd, "paprika3d"), ignore = join2(dir, ".gitignore");
+  if (!existsSync(ignore))
+    mkdirSync(dir, { recursive: !0 }), writeFileSync(ignore, `*
+`);
+  return dir;
+}
+function updateState(cwd, change) {
+  let path = file(cwd);
+  harnessDir(cwd);
+  let lock = `${path}.lock`, deadline = Date.now() + LOCK_WAIT_MS;
+  for (;; )
+    try {
+      closeSync(openSync(lock, "wx"));
+      break;
+    } catch (e) {
+      if (e.code !== "EEXIST")
+        throw e;
+      try {
+        if (Date.now() - statSync2(lock).mtimeMs > LOCK_STALE_MS)
+          rmSync(lock, { force: !0 });
+      } catch {}
+      if (Date.now() > deadline)
+        throw Error(`state.json is locked: ${lock}`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5);
+    }
+  try {
+    let s = readState(cwd);
+    return change(s), writeFileSync(`${path}.tmp`, JSON.stringify(s, null, 2)), renameSync(`${path}.tmp`, path), s;
+  } finally {
+    rmSync(lock, { force: !0 });
+  }
+}
+function noteRun(cwd, fingerprint2, run) {
+  return updateState(cwd, (s) => {
+    if (s.lastFingerprint !== fingerprint2)
+      s.iterations++;
+    if (s.lastFingerprint = fingerprint2, run.failing)
+      setLastCheck(s, fingerprint2, run.failing);
+    s.runs = [...s.runs, run].slice(-MAX_RUNS);
+  });
+}
+function setLastCheck(s, fingerprint2, failing) {
+  let before = s.lastCheck?.failing ?? [];
+  s.lastCheck = { fingerprint: fingerprint2, failing, changed: before.length !== failing.length || !failing.every((id) => before.includes(id)) };
+}
+function issueContract(cwd, contractHash, issued) {
+  return updateState(cwd, (s) => {
+    Object.assign(s, { contractHash, issued, lastFingerprint: null, lastCheck: null, iterations: 0 });
+  });
+}
+function recordRun(r) {
+  let end = /* @__PURE__ */ new Date, { cwd: _, ...detail } = r;
+  writeFileSync(join2(statSync2(r.picture, { throwIfNoEntry: !1 })?.isDirectory() ? r.picture : dirname(r.picture), "run.json"), JSON.stringify({ ...detail, start: new Date(end.getTime() - r.durationMs).toISOString(), end: end.toISOString() }, null, 2));
+}
+var MAX_RUNS = 200, LOCK_WAIT_MS = 1e4, LOCK_STALE_MS = 30000, empty = () => ({ contractHash: null, issued: null, lastFingerprint: null, lastCheck: null, iterations: 0, url: null, command: null, server: null, runs: [] }), file = (cwd) => join2(cwd, "paprika3d", "state.json");
+var init_state = () => {};
+
+init_fingerprint();
+init_state();
+import { existsSync as existsSync3, readFileSync as readFileSync4, realpathSync as realpathSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname as dirname3, extname as extname2, join as join4, resolve, sep as sep2 } from "node:path";
+import { spawnSync } from "node:child_process";
+import { json } from "node:stream/consumers";
+
+init_state();
+async function askServer(dir, body, s = readState(dir).server) {
+  if (!s)
+    return null;
+  let res;
+  try {
+    res = await fetch(`http://127.0.0.1:${s.port}/check`, { method: "POST", body: JSON.stringify({ token: s.token, ...body }) });
+  } catch {
+    return null;
+  }
+  if (res.status === 500)
+    throw Error((await res.json()).error);
+  return res.ok ? await res.json() : null;
+}
+
+import { closeSync as closeSync2, existsSync as existsSync2, openSync as openSync2, readdirSync as readdirSync2, readFileSync as readFileSync3, readSync, statSync as statSync3 } from "node:fs";
+import { dirname as dirname2, join as join3 } from "node:path";
+var mtime = (f) => {
+  try {
+    return statSync3(f).mtimeMs;
+  } catch {
+    return 0;
+  }
+};
+function sessionRuns(transcript, sessionId, batch = []) {
+  if (typeof transcript !== "string" || !existsSync2(transcript))
+    return null;
+  let sub = join3(dirname2(transcript), sessionId, "subagents"), files = [transcript, ...existsSync2(sub) ? readdirSync2(sub).filter((f) => f.endsWith(".jsonl")).map((f) => join3(sub, f)) : []], ids = /* @__PURE__ */ new Set, runs = /* @__PURE__ */ new Set, named = (json) => {
+    for (let m of json.matchAll(/(?:Run folder|Picture): (\/[^"\\]*?\/paprika3d\/runs\/[^"\\/]+)/g))
+      runs.add(m[1]);
+  };
+  for (let c of batch)
+    if (c.tool_name.startsWith("mcp__plugin_paprika3d_paprika__"))
+      named(JSON.stringify(c.tool_response ?? ""));
+  for (let f of files) {
+    let text = readFileSync3(f, "utf8");
+    for (let m of text.matchAll(/"type":"tool_use","id":"([^"]+)","name":"mcp__plugin_paprika3d_paprika__\w+"/g))
+      ids.add(m[1]);
+    for (let line of text.split(`
+`)) {
+      let at = line.indexOf('"tool_result"');
+      if (at < 0 || line.includes('"tool_result"', at + 1))
+        continue;
+      let id = /"tool_use_id":"([^"]+)"/.exec(line)?.[1];
+      if (!id || !ids.has(id))
+        continue;
+      named(line);
+    }
+  }
+  return [...runs];
+}
+var SOURCE = /\.(html?|m?js|jsx|tsx?|css|glsl|vert|frag|wgsl)$/, SKIP = /* @__PURE__ */ new Set(["node_modules", "dist", "build", "paprika3d", "paprika-loop", "Library"]), COPIES = /* @__PURE__ */ new Set(["three-runtime.js", "geo.js", "fx.js", "game-state.js", "physics-worker.js"]);
+function sourcesSince(root, since, keep = () => !0, max = 21) {
+  let found = [], seen = 0;
+  return function walk(d, depth) {
+    if (depth > 6)
+      return;
+    for (let e of (() => {
+      try {
+        return readdirSync2(d, { withFileTypes: !0 });
+      } catch {
+        return [];
+      }
+    })()) {
+      if (found.length >= max || ++seen > 5000)
+        return;
+      if (e.name.startsWith(".") || SKIP.has(e.name))
+        continue;
+      let p = join3(d, e.name);
+      if (e.isDirectory())
+        walk(p, depth + 1);
+      else if (SOURCE.test(e.name) && !COPIES.has(e.name) && mtime(p) > since && keep(p))
+        found.push(p);
+    }
+  }(root, 0), found;
+}
+function sessionBegan(transcript) {
+  try {
+    let f = String(transcript), head = Buffer.alloc(65536), fd = openSync2(f, "r"), n = readSync(fd, head, 0, head.length, 0);
+    closeSync2(fd);
+    let at = [...head.toString("utf8", 0, n).matchAll(/"timestamp":"([^"]+)"/g)].map((m) => Date.parse(m[1])).concat(statSync3(f).birthtimeMs).filter((t) => t > 0);
+    return at.length ? Math.min(...at) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+var FILE_TOOLS = /* @__PURE__ */ new Set(["Edit", "Write", "NotebookEdit"]), input = await json(process.stdin).catch(() => null);
+if (!input)
+  process.exit(0);
+var calls = input.tool_calls ?? (input.tool_name ? [input] : []), edits = calls.filter((c) => FILE_TOOLS.has(c.tool_name)).map((c) => ({ ref: c.tool_use_id ?? "", file: String(c.tool_input?.file_path ?? c.tool_input?.notebook_path ?? "") })).filter((e) => e.file), shell = calls.filter((c) => c.tool_name === "Bash"), session = input.agent_id ? `${input.session_id}/${input.agent_id}` : String(input.session_id ?? ""), REMIND = "paprika3d: this three.js page has not been opened in this session. `open` runs it in headless Chrome on a paused clock, `look` shows what a viewer sees, and `interact` plays it and returns the state.", THREE = /from\s*["'](?:three|three\/[^"']+|@react-three\/[^"']+)["']|import\s*\(\s*["']three["']|require\(\s*["']three["']\)|["']three["']\s*:|three\.module(?:\.min)?\.js|\/build\/three\./, readOr = (f) => {
+  try {
+    return readFileSync4(f, "utf8");
+  } catch {
+    return "";
+  }
+};
+if (!edits.length && !shell.length)
+  process.exit(0);
+var CONTRACT = process.argv.includes("--contract"), FILE = CONTRACT ? "game-contract.json" : "game-tests.json";
+function project(from) {
+  for (let d = resolve(from);; d = dirname3(d)) {
+    if (existsSync3(join4(d, FILE)) || !CONTRACT && existsSync3(join4(d, "paprika3d", "state.json")))
+      return d;
+    if (dirname3(d) === d)
+      return null;
+  }
+}
+var dir = edits.map((e) => project(dirname3(resolve(input.cwd ?? ".", e.file)))).find(Boolean) ?? project(input.cwd ?? ".");
+function deliver(text) {
+  let parent = process.env.CLAUDE_PID ? spawnSync("ps", ["-o", "args=", "-p", process.env.CLAUDE_PID], { encoding: "utf8" }).stdout : "";
+  if (/(^|\s)(-p|--print)(\s|$)/.test(parent) && !/--input-format[ =]stream-json/.test(parent))
+    console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: input.hook_event_name ?? "PostToolBatch", additionalContext: text } })), process.exit(0);
+  console.error(text), process.exit(2);
+}
+var real = (p) => {
+  try {
+    return realpathSync2(p);
+  } catch {
+    return p;
+  }
+}, projectOf = (run) => real(resolve(run, "..", "..", "..")), runs, opened = () => runs !== void 0 ? runs : runs = sessionRuns(input.transcript_path, String(input.session_id ?? ""), calls)?.map(projectOf) ?? null;
+function remind() {
+  let mark = join4(tmpdir(), `paprika3d-reminded-${session.replace(/[^\w.-]/g, "_")}`);
+  if (existsSync3(mark))
+    process.exit(0);
+  let cwd = resolve(input.cwd ?? "."), page = (f) => /\.(html|jsx?|tsx?)$/.test(f) && THREE.test(readOr(f)), pages = edits.map((e) => resolve(cwd, e.file)).filter(page), since = !pages.length && shell.length && !cwd.split(sep2).includes("node_modules") ? sessionBegan(input.transcript_path) : 0;
+  if (since)
+    pages.push(...sourcesSince(cwd, since, page, 1));
+  if (!pages.length)
+    process.exit(0);
+  writeFileSync2(mark, "");
+  let roots = [cwd, ...pages.map((p) => dirname3(p))], mine = opened();
+  if (!!mine && roots.some((r) => {
+    let p = real(r);
+    return mine.some((o) => p === o || p.startsWith(o + sep2));
+  }))
+    process.exit(0);
+  deliver(REMIND);
+}
+if (!dir)
+  remind();
+var state = readState(dir), saved = existsSync3(join4(dir, FILE));
+if (!saved && (!state.server || opened()?.includes(real(dir)) === !1))
+  remind();
+if (!state.url && !state.command)
+  process.exit(0);
+var print = fingerprint(dir);
+if (state.lastCheck?.fingerprint === print)
+  process.exit(0);
+var edit = edits.at(-1) ?? { ref: shell.at(-1).tool_use_id ?? "", file: "" }, ref = { ref: edit.ref, file: edit.file ? resolve(input.cwd ?? ".", edit.file) : "", time: (/* @__PURE__ */ new Date()).toISOString(), session }, out = "", err = "", status = 0;
+try {
+  let r = await askServer(dir, { edit: ref, ...!CONTRACT && { tests: saved, faults: !0 } }, state.server);
+  if (r)
+    out = JSON.stringify(r);
+} catch (e) {
+  err = `paprika3d check: ${e.message}`, status = 1;
+}
+if (!out && !err) {
+  if (!saved)
+    remind();
+  let cli = join4(import.meta.dirname, "../src", `cli${extname2(import.meta.filename)}`), p = spawnSync(process.execPath, [
+    cli,
+    "check",
+    "--cwd",
+    dir,
+    "--json",
+    "--edit-ref",
+    ref.ref,
+    ...ref.file ? ["--edit-file", ref.file] : [],
+    "--edit-time",
+    ref.time,
+    "--session",
+    session
+  ], { encoding: "utf8", maxBuffer: 67108864, timeout: 170000, killSignal: "SIGKILL" });
+  if ({ stdout: out = "", stderr: err = "", status } = p, p.signal === "SIGKILL")
+    out = "", err = `paprika3d check: did not finish in 170 s: a keypoint's page may hang; run \`${CONTRACT ? "check" : "test"}\` to see which`;
+}
+var changed, report, faults;
+if (out.trim())
+  ({ changed, text: report, faults } = JSON.parse(out));
+else if (err.includes("paprika3d check: game not ready"))
+  process.exit(0);
+else {
+  if (!saved)
+    process.exit(0);
+  report = err.trim().split(`
+`).filter((l) => l.startsWith("paprika3d")).join(`
+`) || err.trim() || `paprika3d check exited ${status}`, changed = updateState(dir, (s) => setLastCheck(s, print, [report])).lastCheck.changed;
+}
+changed &&= saved;
+var f = faults?.closed.length || faults?.opened.length ? faults : void 0;
+if (!changed && !f)
+  process.exit(0);
+var after = edit.file ? "edit" : "shell command", was = new Set(state.lastCheck?.failing ?? []), said = CONTRACT ? [] : report.split(`
+`).flatMap((l) => {
+  let m = /^([✓✗]) ([\w-]+)(?:: (.*))?$/.exec(l);
+  return !m ? [] : m[1] === "✗" ? [`${m[2]} ${was.has(m[2]) ? "still fails" : "now fails"} (${m[3]})`] : [`${m[2]} ${was.has(m[2]) ? "now passes" : "still passes"}`];
+}), lines = report.split(`
+`).filter((l) => !l.startsWith("Frames:") || l.includes("over budget")), checks = !changed ? [] : said.length ? [`game-tests.json after your ${after}: ${said.join("; ")}. \`test\` reruns them.`] : [`${CONTRACT ? "Game contract" : "Saved checks (game-tests.json)"} after your ${after} (the failing ${CONTRACT ? "keypoints" : "checks"} changed):`, ...lines], recheck = !f ? [] : [
+  `Fault lines after your ${after}, on the freshly reloaded page, without a picture (a fault that needs play to show is not seen here):`,
+  ...f.closed.map((l) => `  closed: ${l}`),
+  ...f.opened.map((l) => `  new: ${l}`),
+  ...f.open.filter((l) => !f.opened.includes(l)).map((l) => `  still open: ${l}`)
+];
+deliver([...checks, ...recheck].join(`
 `));
