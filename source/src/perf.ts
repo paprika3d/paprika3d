@@ -304,7 +304,7 @@ export const decided = (r: { ratio: number; lo: number; hi: number }, { width, f
 export const RUN_S = 0.25; // a variant samples 0.25 s, the baseline 0.5 s: a 250 ms window spreads across loads as much as a 2 s one
 export const RUN_WARM_MS = 300; // frames were within 2% of steady from 300 ms on every page measured
 export const RUNS_FLOOR = 3; // a 20% change decided in 3.5 rounds on average; floors of 4 and 5 bought no fewer false changes
-export const RUNS_CAP = 8; // about ±7% at cubes' 6.5% run-to-run spread; keeps Welch's df under 30, where t jumps to 1.96
+export const RUNS_CAP = 5; // a no-op runs to the cap and reads "no clear change" either way; 8 made a 5-variant call 42-44 s (JC, 2026-10-29)
 export const CALL_CAP_S = 45; // about twice a 5-variant call on the 11 ms bloom page before runs repeated (23.5 s)
 export const DECIDED_WIDTH = 10, DECIDED_FLOOR = 5; // percent: 0-4% of no-ops read as a change in the replay, at 4.7-5.2 rounds
 const STEP_MS = 0.1; // Chrome's frame stamp step: a 0.2 ms page with no spread read one step as ±50% on a zero-width interval

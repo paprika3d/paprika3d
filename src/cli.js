@@ -52794,7 +52794,7 @@ var PASSES = `(async () => {
     const n = h.frameNo, t = c.realNow(); await c.step(1); const s = c.realNow(); await h.sync();
     cpu.push(s - t); all.push(c.realNow() - t); drew.push(h.frameNo !== n);
   }
-  return { all, cpu, drew }; })()`, pacingBound = (median, workMs) => median > 12 && workMs < median / 2, round2 = (n) => Math.round(n * 100) / 100, pick = (sorted, q2) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q2))] ?? 0, sortNum = (a2) => [...a2].sort((x2, y) => x2 - y), T95, decided = (r, { width, floor }) => (r.hi - r.lo) / 2 / r.ratio * 100 <= width || r.lo > 1 + floor / 100 || r.hi < 1 - floor / 100, RUN_S = 0.25, RUN_WARM_MS = 300, RUNS_FLOOR = 3, RUNS_CAP = 8, CALL_CAP_S = 45, DECIDED_WIDTH = 10, DECIDED_FLOOR = 5, STEP_MS2 = 0.1, SETTLE_FRAMES = 100, SETTLED, NO_FRAMES = `(() => { const c = __clock; return "clock " + (c.paused() ? "paused" : "running") + " at " + Math.round(c.now()) + " ms, "
+  return { all, cpu, drew }; })()`, pacingBound = (median, workMs) => median > 12 && workMs < median / 2, round2 = (n) => Math.round(n * 100) / 100, pick = (sorted, q2) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q2))] ?? 0, sortNum = (a2) => [...a2].sort((x2, y) => x2 - y), T95, decided = (r, { width, floor }) => (r.hi - r.lo) / 2 / r.ratio * 100 <= width || r.lo > 1 + floor / 100 || r.hi < 1 - floor / 100, RUN_S = 0.25, RUN_WARM_MS = 300, RUNS_FLOOR = 3, RUNS_CAP = 5, CALL_CAP_S = 45, DECIDED_WIDTH = 10, DECIDED_FLOOR = 5, STEP_MS2 = 0.1, SETTLE_FRAMES = 100, SETTLED, NO_FRAMES = `(() => { const c = __clock; return "clock " + (c.paused() ? "paused" : "running") + " at " + Math.round(c.now()) + " ms, "
   + c.scheduled() + " timers and frames ever scheduled, " + __perf.t.length + " stamps, page " + (document.hidden ? "hidden" : "visible")
   + ", " + __harness.renderers.length + " renderers"; })()`, PACE = `(() => { const raf = requestAnimationFrame.bind(window); let last = -1e9; __perf.paced = 0;
   window.requestAnimationFrame = cb => raf(function f(t) { if (t === last || t - last >= 16.6) { if (t !== last) __perf.paced++; last = t; cb(t); } else raf(f); }); })()`, MIME, side = (w2, h) => Math.round(Math.sqrt(w2 * h)), NETWORKS, FIRST_POLL = `(() => { const h = window.__harness; return h ? { now: Performance.prototype.now.call(performance), first: h.firstFrameAt ?? null,
@@ -61911,11 +61911,11 @@ async function installed(client) {
   if (!FEEDBACK)
     return;
   try {
-    let f = join21(telemetryDir(), "pinged"), body = JSON.stringify({ ...base(), client: client.slice(0, 64) }), version = "0.3.1";
-    if (existsSync13(f) && readFileSync18(f, "utf8") === "0.3.1")
+    let f = join21(telemetryDir(), "pinged"), body = JSON.stringify({ ...base(), client: client.slice(0, 64) }), version = "0.3.2";
+    if (existsSync13(f) && readFileSync18(f, "utf8") === "0.3.2")
       return;
     if (await post("/install", body))
-      writeFileSync10(f, "0.3.1");
+      writeFileSync10(f, "0.3.2");
   } catch {}
 }
 function told() {
@@ -61929,7 +61929,7 @@ function stopEvent(asked) {
 `);
   } catch {}
 }
-var off, ON = !1, FEEDBACK, URL3 = "https://paprika3d-telemetry.paprika3d.workers.dev", KEY = "9cf6093e07a2c1cc94161e84dbdb59268440ff04d06b7be9", telemetryDir = () => join21(harnessHome(), "telemetry"), run2, KINDS3, id = "", base = () => ({ v: 1, at: (/* @__PURE__ */ new Date()).toISOString(), install: install2(), run: run2, version: "0.3.1", os: platform(), node: process.versions.node.split(".")[0] }), scrub = (s) => (s.split(`
+var off, ON = !1, FEEDBACK, URL3 = "https://paprika3d-telemetry.paprika3d.workers.dev", KEY = "9cf6093e07a2c1cc94161e84dbdb59268440ff04d06b7be9", telemetryDir = () => join21(harnessHome(), "telemetry"), run2, KINDS3, id = "", base = () => ({ v: 1, at: (/* @__PURE__ */ new Date()).toISOString(), install: install2(), run: run2, version: "0.3.2", os: platform(), node: process.versions.node.split(".")[0] }), scrub = (s) => (s.split(`
 `)[0] ?? "").replace(/[a-z]+:\/\/\S+/gi, "<url>").replace(/(?:[A-Za-z]:\\|~?\/)[^\s:'"`,)]+/g, "<path>").slice(0, 160), extra, last3 = null, post = (path14, body) => !URL3 ? Promise.resolve(!1) : fetch(URL3 + path14, { method: "POST", headers: { "content-type": "application/json", "x-paprika3d-key": KEY }, body, signal: AbortSignal.timeout(3000) }).then((r) => r.ok, () => !1), REPORT_TOOL, reports = 0, REPORT_ASK;
 var init_telemetry = __esm(() => {
   init_state();
@@ -62655,7 +62655,7 @@ async function mint(who) {
     client_version,
     model: who.model ?? null,
     os: platform2(),
-    plugin_version: "0.3.1"
+    plugin_version: "0.3.2"
   }, headers: invite ? { "x-paprika3d-invite": invite } : {} });
   if (!had)
     writePrivate(join23(configDir(), "install-id"), install3);
@@ -62721,7 +62721,7 @@ async function publish(cwd, who, opts = {}) {
   try {
     if (!key2)
       key2 = await mint(who), minted = !0;
-    let agent = { install: installId(), client: who.client === "unknown" ? null : who.client, model: who.model ?? null, plugin_version: "0.3.1" }, chosen = opts.slug ? { slug: opts.slug, kept: !0 } : slugFor(cwd, api3), slug2 = chosen.slug, s;
+    let agent = { install: installId(), client: who.client === "unknown" ? null : who.client, model: who.model ?? null, plugin_version: "0.3.2" }, chosen = opts.slug ? { slug: opts.slug, kept: !0 } : slugFor(cwd, api3), slug2 = chosen.slug, s;
     for (let tries = 0;!s; tries++)
       try {
         s = await call("/v1/publish", { json: { slug: slug2, files: manifest, agent }, secret: key2.secret });
@@ -63253,7 +63253,7 @@ ${said.join(`
 async function handle(method, params) {
   switch (method) {
     case "initialize":
-      return client = [params?.clientInfo?.name, params?.clientInfo?.version].filter(Boolean).join("/") || client, installed(client), { protocolVersion: params?.protocolVersion ?? "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "paprika3d", title: "paprika3d", version: "0.3.1" }, instructions: INSTRUCTIONS };
+      return client = [params?.clientInfo?.name, params?.clientInfo?.version].filter(Boolean).join("/") || client, installed(client), { protocolVersion: params?.protocolVersion ?? "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "paprika3d", title: "paprika3d", version: "0.3.2" }, instructions: INSTRUCTIONS };
     case "ping":
       return {};
     case "tools/list":

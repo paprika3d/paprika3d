@@ -1,6 +1,6 @@
 {
   "name": "paprika3d",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "private": true,
   "description": "Three.js MCP server and Claude Code plugin: screenshot, play, test and profile the three.js pages your coding agent builds. It tells the agent what is on screen, what never appears, what each input changed and what a frame costs.",
   "keywords": [

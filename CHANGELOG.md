@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 (2026-10-29)
+
+`perf` with `variants` stops after 5 rounds, not 8: a variant still undecided by then reads `no clear change`
+as before, and a 5-variant call takes about two thirds as long. Changes of about 10% are caught less often.
+
 ## 0.3.1 (2026-10-29)
 
 `perf` with `variants` repeats each measure over fresh page loads and says a change only when it holds across them:

@@ -190,11 +190,11 @@ async function installed(client) {
   if (!FEEDBACK)
     return;
   try {
-    let f = join3(telemetryDir(), "pinged"), body = JSON.stringify({ ...base(), client: client.slice(0, 64) }), version = "0.3.1";
-    if (existsSync3(f) && readFileSync3(f, "utf8") === "0.3.1")
+    let f = join3(telemetryDir(), "pinged"), body = JSON.stringify({ ...base(), client: client.slice(0, 64) }), version = "0.3.2";
+    if (existsSync3(f) && readFileSync3(f, "utf8") === "0.3.2")
       return;
     if (await post("/install", body))
-      writeFileSync2(f, "0.3.1");
+      writeFileSync2(f, "0.3.2");
   } catch {}
 }
 function told() {
@@ -208,7 +208,7 @@ function stopEvent(asked) {
 `);
   } catch {}
 }
-var off, ON = !1, FEEDBACK, URL = "https://paprika3d-telemetry.paprika3d.workers.dev", KEY = "9cf6093e07a2c1cc94161e84dbdb59268440ff04d06b7be9", telemetryDir = () => join3(harnessHome(), "telemetry"), run, KINDS, id = "", base = () => ({ v: 1, at: (/* @__PURE__ */ new Date()).toISOString(), install: install(), run, version: "0.3.1", os: platform(), node: process.versions.node.split(".")[0] }), scrub = (s) => (s.split(`
+var off, ON = !1, FEEDBACK, URL = "https://paprika3d-telemetry.paprika3d.workers.dev", KEY = "9cf6093e07a2c1cc94161e84dbdb59268440ff04d06b7be9", telemetryDir = () => join3(harnessHome(), "telemetry"), run, KINDS, id = "", base = () => ({ v: 1, at: (/* @__PURE__ */ new Date()).toISOString(), install: install(), run, version: "0.3.2", os: platform(), node: process.versions.node.split(".")[0] }), scrub = (s) => (s.split(`
 `)[0] ?? "").replace(/[a-z]+:\/\/\S+/gi, "<url>").replace(/(?:[A-Za-z]:\\|~?\/)[^\s:'"`,)]+/g, "<path>").slice(0, 160), extra, last = null, post = (path, body) => !URL ? Promise.resolve(!1) : fetch(URL + path, { method: "POST", headers: { "content-type": "application/json", "x-paprika3d-key": KEY }, body, signal: AbortSignal.timeout(3000) }).then((r) => r.ok, () => !1), REPORT_TOOL, reports = 0, REPORT_ASK;
 var init_telemetry = __esm(() => {
   init_state();
