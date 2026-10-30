@@ -27,10 +27,10 @@ import { invariants } from "./invariants.ts";
 import { capAct, observe } from "./scene.ts";
 import { AFTER_STOP, evaluate } from "./eval.ts";
 import { act, hover, type Step } from "./input.ts";
-import { look, lookFrom, lookText, faultLines, faultDiff, faultsNow, coversText, views, cameras, namedCam, sheet, viewports, viewportsText, sheetText, scrollSweep, zoom, zoomOutside, probe, opening, saveBaseline, compareBaseline, colours, type Cover, type Look, type SheetItem } from "./look.ts";
+import { look, lookFrom, lookText, faultLines, faultDiff, faultsNow, coversText, views, cameras, namedCam, sheet, viewports, viewportsText, sheetText, shortText, scrollSweep, zoom, zoomOutside, probe, opening, saveBaseline, compareBaseline, colours, type Cover, type Look, type SheetItem } from "./look.ts";
 import { feel } from "./feel.ts";
 import { COLOUR_SPACES } from "./lighting.ts";
-import { pageAssets, perf, passesText, costsText, overlayText, variantSetup, variantUrl, firstFrame, NETWORKS, LIGHTS, manyLights, lightsText, type Lights, type Variant, type PerfResult, type Network } from "./perf.ts";
+import { pageAssets, perf, compare, RUN_S, RUN_WARM_MS, RUNS_FLOOR, RUNS_CAP, CALL_CAP_S, passesText, costsText, overlayText, variantSetup, variantUrl, firstFrame, NETWORKS, LIGHTS, manyLights, lightsText, type Lights, type Variant, type PerfResult, type Network } from "./perf.ts";
 import { BUDGETS, SOFTWARE_NOTE, budgetText, type Budget } from "./budgets.ts";
 import { optimize } from "./optimize.ts";
 import { assetsText, CONVERT, shrink, shrinkFix, shrinkText } from "./glb.ts";
@@ -92,7 +92,8 @@ async function withPicture(g: Game, r: Result, file: string): Promise<Result> {
     const png = readFileSync(file).toString("base64");
     const data = await g.queue(() => g.page.evaluate(async (b64: string) => {
       // a Blob, not a data: URL: Network.enable echoed the whole URL in two events, twice the PNG's size back over CDP per picture
-      const i = await createImageBitmap(new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: "image/png" }));
+      const U = Uint8Array as typeof Uint8Array & { fromBase64?: (s: string) => Uint8Array }; // as PNG_BLOB in look.ts
+      const i = await createImageBitmap(new Blob([U.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type: "image/png" }));
       const k = Math.min(1, 1024 / i.width), c = document.createElement("canvas");
       c.width = Math.round(i.width * k); c.height = Math.round(i.height * k);
       c.getContext("2d")!.drawImage(i, 0, 0, c.width, c.height);
@@ -103,6 +104,9 @@ async function withPicture(g: Game, r: Result, file: string): Promise<Result> {
 }
 
 const LEAN = process.env.PAPRIKA3D_LOOP === "lean";
+// the short reply, off by default until the reply-trim plan's A/B decides (shortText in look.ts)
+const SHORT = process.env.PAPRIKA3D_REPLY === "short";
+const short = (tool: "look" | "interact", t: string) => SHORT ? shortText(tool, t) : t;
 // the game contract runs only in the bench's contract arm until a benchmark shows it helps (docs/decisions-2026-10-16.md)
 const CONTRACT = process.env.PAPRIKA3D_LOOP === "contract";
 const CWD = { type: "string", description: "The game project's folder." };
@@ -293,6 +297,12 @@ const hookFaults = new WeakMap<Game, { frame?: number; lines: string[] }>();
 // the sources each game's page ran at its last look (noteTest): a look on other sources follows an edit, which can close a fault line
 const lookPrint = new WeakMap<Game, string>();
 const edited = (g: Game) => lookPrint.has(g) && lookPrint.get(g) !== loadedPrint;
+// games a sheet or `test` left at its last moment instead of reloading: the next call reloads first, unless it reloads first
+// anyway (selfFresh), so a sheet or `test` after one saves a reload (one of a sheet's 4 to 7, of a 4-check test's 5)
+const owed = new WeakSet<Game>();
+const selfFresh = (name: string, a: Record<string, any>) => name === "test" || name === "look" && !!(a.sheet || a.viewports || a.scroll || a.opening);
+// the page of g now runs the sources of print
+function loadedFrom(g: Game, print: string) { if (game === g) loadedPrint = print; for (const s of slots.values()) if (s.game === g) s.loadedPrint = print; }
 type Faults = CheckReply["faults"];
 
 /** A check's last reload, so the agent's next call starts at frame 0. Notes that the page runs the sources of `print`
@@ -302,11 +312,12 @@ type Faults = CheckReply["faults"];
 async function reloadAfter(g: Game, dir: string, print: string, opts: { hook?: boolean; faults?: boolean }): Promise<{ stale: boolean; faults?: Faults }> {
   const first = (e: string) => e.split("\n")[0], had = new Set(g.errors.map(first));
   const ok = await g.reload().then(() => true, () => false);
+  if (ok) owed.delete(g);
   if (opts.hook) hookReset.add(g);
   // a page that drew nothing has no lines: no fault change at all, never every line closed
   const now = opts.faults && ok ? await faultsNow(g).catch(() => null) : null;
   const stale = fingerprint(dir) !== print;
-  if (ok && !stale) { if (game === g) loadedPrint = print; for (const s of slots.values()) if (s.game === g) s.loadedPrint = print; }
+  if (ok && !stale) loadedFrom(g, print);
   // nor a page the edit broke, which keeps the baseline: a typo that throws after the floor is built leaves the rug's line
   // missing. An error the page gives on every load (the same first line each time) is not the edit's.
   if (!now || g.errors.some(e => !had.has(first(e)))) return { stale };
@@ -335,7 +346,7 @@ export function runCheck(g: Game, dir: string, opts: { edit?: Edit; ci?: boolean
     const print = fingerprints(dir, { assets: true });
     const key = [print.sources, print.assets, JSON.stringify(contract), JSON.stringify(g.config), !!opts.ci, tests].join("|");
     const memo = lastFull.get(g);
-    if (memo?.key === key) return { ...memo.r, changed: false, text: `${memo.r.text}\n(these sources were already checked at ${memo.at}, by the after-edit hook or an earlier call, so this is that result)` };
+    if (memo?.key === key) { if (owed.delete(g)) await g.reload(); return { ...memo.r, changed: false, text: `${memo.r.text}\n(these sources were already checked at ${memo.at}, by the after-edit hook or an earlier call, so this is that result)` }; }
     // `result`: a check `perf` with optimize already ran on these sources with the switches it kept, recorded instead of run again
     const r = opts.result ?? await check(g, contract, { cwd: dir, print: print.sources, tests });
     // a passing check has no picture of its own: its run.json goes in the run folder, and no check-N.png piles up after every edit
@@ -345,6 +356,7 @@ export function runCheck(g: Game, dir: string, opts: { edit?: Edit; ci?: boolean
     const after = !opts.result && opts.reload !== false ? await reloadAfter(g, dir, r.fingerprint, opts) : null;
     // a result for sources that changed while it ran is not the last check: the edit that changed them gets its own
     const stale = after?.stale ?? fingerprint(dir) !== r.fingerprint;
+    if (opts.reload === false && !opts.result) { owed.add(g); if (!stale) loadedFrom(g, r.fingerprint); } // its keypoints' reloads ran these sources
     const state = noteRun(dir, r.fingerprint, { ts: new Date().toISOString(), kind: "check", passed: r.passed, failed: r.failed, durationMs: r.durationMs,
       failing: stale ? undefined : r.outcomes.filter(o => o.outcome !== "passed").map(o => o.id) });
     recordRun({ cwd: dir, kind: "check", picture, contractHash: state.contractHash, passed: r.passed, failed: r.failed, outcomes: r.outcomes,
@@ -387,12 +399,19 @@ async function startControl(): Promise<Server> {
     if (body.edit) mine.edit = body.edit;
     if (!p) {
       const g = game;
-      mine.result = guarded(g.queue(() => {
+      // in the call queue, as an agent's call is (#205): on the game's queue alone, a call behind a 7.8 min check spent
+      // its own 10 min limit waiting and its reply never said so; here the call says it waited and its limit starts after
+      const run = calls.then(() => {
         if (waiting === mine) waiting = null;
-        // queued behind a call whose page hung: every keypoint would fail on the closed page and read as a change
-        if (g.page.isClosed() || !g.page.browser().connected) throw new Error("the game's page was closed after a call hung; the agent's next call opens it again");
-        return runCheck(g, cwd, { edit: mine.edit, ci: mine.ci, tests: mine.tests, faults: mine.faults, hook: true });
-      }), "check", () => g);
+        running = HOOK;
+        return guarded(g.queue(() => {
+          // queued behind a call whose page hung: every keypoint would fail on the closed page and read as a change
+          if (g.page.isClosed() || !g.page.browser().connected) throw new Error("the game's page was closed after a call hung; the agent's next call opens it again");
+          return runCheck(g, cwd, { edit: mine.edit, ci: mine.ci, tests: mine.tests, faults: mine.faults, hook: true });
+        }), "check", () => g).finally(() => { running = null; });
+      });
+      calls = run.catch(() => {});
+      mine.result = run;
     }
     try {
       const r = await mine.result;
@@ -624,7 +643,8 @@ const TOOL_FNS: Record<string, (a: Record<string, any>) => Promise<Result>> = {
     if (!a.look) return strip ? withPicture(g, text(body), strip) : text(body);
     // the look after the steps in the same reply: AA-3D full-1 agents sent a `look` right after an `interact` up to 22
     // times a cell, a model call each
-    const start = Date.now(), l = await look(g, { edited: edited(g) }), lt = lookText(l);
+    // a short reply drops the camera hint here, so it is not marked said and the next plain look says it
+    const start = Date.now(), l = await look(g, { edited: edited(g), hint: !SHORT }), lt = short("interact", lookText(l));
     recordPlain("look", l.picture, Date.now() - start);
     noteTest(g, l);
     // with a clip, both pictures: look's after the steps, then the clip's four moments
@@ -646,7 +666,7 @@ const TOOL_FNS: Record<string, (a: Record<string, any>) => Promise<Result>> = {
     if (a.cameras) {
       const v = await cameras(g, cwd, (a.cameras as (string | { position: number[]; lookAt?: number[]; label?: string })[]).map(c => typeof c === "string" ? { ...namedCam(cwd, c), label: c } : c));
       recordPlain("look", v.picture, Date.now() - start);
-      return withPicture(g, text(`Picture: ${v.picture} (${v.cells.length} cameras, left to right, top to bottom, at frame ${v.cells[0]!.look.frame ?? 0}, no reload; the game's own camera is not moved)\n${sheetText(v.cells).join("\n")}`
+      return withPicture(g, text(`Picture: ${v.picture} (${v.cells.length} cameras, left to right, top to bottom, at frame ${v.cells[0]!.look.frame ?? 0}, no reload; the game's own camera is not moved)\n${short("look", sheetText(v.cells).join("\n"))}`
         + `\nEach cell at full size: ${v.cells.map(c => `${c.label} ${basename(c.look.picture)}`).join(", ")} (in the picture's folder).`
         + (v.kept.length ? `\nKept as \`camera\` names for look, zoom and reference compare: ${v.kept.map(n => JSON.stringify(n)).join(", ")} (paprika3d/cameras.json).` : "")), v.picture);
     }
@@ -661,9 +681,10 @@ const TOOL_FNS: Record<string, (a: Record<string, any>) => Promise<Result>> = {
       return withPicture(g, text(`Picture: ${v.picture} (${v.cells.length} scroll stops, left to right, top to bottom, each on a fresh reload); the game is reloaded at its first frame\n${v.cells.map(c => c.text).join("\n")}`), v.picture);
     }
     if (a.sheet) {
-      const v = await sheet(g, a.sheet as SheetItem[]), took = Date.now() - start;
+      const v = await sheet(g, a.sheet as SheetItem[], { reload: false }), took = Date.now() - start;
+      owed.add(g);
       recordPlain("look", v.picture, took);
-      return withPicture(g, text(`Picture: ${v.picture} (${v.labels.length} moments, left to right, top to bottom: ${v.labels.join(" | ")}); the game is reloaded at its first frame\n${sheetText(v.cells).join("\n")}${v.missed.length ? `\nDid not finish: ${v.missed.join(" | ")}; try fewer frames or steps for those` : ""}\nThis sheet took ${Math.round(took / 1000)} s (about ${Math.round(took / 1000 / (a.sheet as SheetItem[]).length)} s a cell)${g.software ? " on a software renderer" : ""}.`), v.picture);
+      return withPicture(g, text(`Picture: ${v.picture} (${v.labels.length} moments, left to right, top to bottom: ${v.labels.join(" | ")}); the game is reloaded at its first frame\n${short("look", sheetText(v.cells).join("\n"))}${v.missed.length ? `\nDid not finish: ${v.missed.join(" | ")}; try fewer frames or steps for those` : ""}\nThis sheet took ${Math.round(took / 1000)} s (about ${Math.round(took / 1000 / (a.sheet as SheetItem[]).length)} s a cell)${g.software ? " on a software renderer" : ""}.`), v.picture);
     }
     if (a.opening) {
       const o = await opening(g);
@@ -742,33 +763,51 @@ const TOOL_FNS: Record<string, (a: Record<string, any>) => Promise<Result>> = {
     const proxy = budget.proxy ? `\nOnly the limits are a ${name === "quest" ? "headset" : "phone"}'s: the frame ran on this host's GPU, which is faster than a ${name === "quest" ? "headset" : "phone"}'s, so GPU work (shadows, post-processing, a high pixel ratio) costs more there than this says.` : "";
     if (a.variants?.length) {
       // the baseline and each variant measured on a fresh page, in one call: agents ran an `open` with URL switches and
-      // a `perf` per variant, 40 model calls in one AA-3D cell
-      const variants = (a.variants as Variant[]).slice(0, 8), rows: string[] = [], home = g.page.url();
-      const throttle = a.throttle as number | undefined;
-      const base = await perf(g, budget, { url: home, throttle, network, work: true, costs: !!a.costs });
+      // a `perf` per variant, 40 model calls in one AA-3D cell. Two loads' medians differ by 2-4 times one sample's noise
+      // (#163, T1 in docs/optimize-log.md), so the page run is the unit: rounds of one baseline run and one run of each
+      // undecided variant, in a rotating order, until each variant's ratio interval over the pooled baseline runs settles
+      // (compare()), RUNS_CAP rounds, or CALL_CAP_S of the call
+      const throttle = a.throttle as number | undefined, home = g.page.url(), short = { throttle, work: true, seconds: RUN_S, warmMs: RUN_WARM_MS };
+      const vs = (a.variants as Variant[]).slice(0, 8).map((v, i) => ({ v, runs: [] as PerfResult[], error: "", settled: false,
+        label: v.label ?? ([v.query !== undefined && `?${v.query.replace(/^\?/, "")}`, v.hide?.length && `hide ${v.hide.join(", ")}`, v.pixelRatio && `pixel ratio ${v.pixelRatio}`, v.code && "code"].filter(Boolean).join(", ") || `variant ${i + 1}`) }));
+      // the first visit (network) and the content table are timed or read once, on the first baseline run
+      const first = await perf(g, budget, { ...short, url: home, network, costs: !!a.costs }), bases = [first];
       // a paced baseline's interval is the display's tick, the same 17 ms for every variant ("within the noise" for a
       // 1-draw-call one, #132): the variants are compared on their work then
-      const paced = !!base.work?.paced, cost = (p: PerfResult) => paced ? p.work?.ms ?? p.median : p.median;
-      // a change under twice the noise is no result: "−14% vs baseline" for 0.1 ms beside 0.3 ms of noise (opinion-9)
-      const delta = (p: PerfResult) => Math.abs(cost(p) - cost(base)) < 2 * base.noiseMs ? `within the noise of the baseline${paced ? "'s work" : ""}`
-        : `${cost(p) <= cost(base) ? "−" : "+"}${Math.abs(Math.round((cost(p) - cost(base)) / Math.max(cost(base), 0.01) * 100))}% ${paced ? "work " : ""}vs baseline`;
+      const paced = !!first.work?.paced, cost = (p: PerfResult) => Math.max(0.01, paced ? p.work?.ms ?? p.median : p.median);
+      const stats = (ps: PerfResult[]) => ps.map(cost);
+      let slowest = 0; // the slowest run so far: stop before a run that would carry the call past CALL_CAP_S, with the closing reload
+      const timed = async <T>(f: () => Promise<T>) => { const t = Date.now(); try { return await f(); } finally { slowest = Math.max(slowest, Date.now() - t); } };
+      const room = () => Date.now() - start + 2 * slowest < CALL_CAP_S * 1000;
+      for (let round = 0; round < RUNS_CAP; round++) {
+        const todo = vs.filter(x => !x.settled && !x.error);
+        if (!todo.length) break;
+        const order: (typeof vs[number] | null)[] = [null, ...todo]; // null: the baseline
+        for (let k = round ? 0 : 1; k < order.length; k++) { // round 0's baseline run is `first`
+          if (!room()) break;
+          const x = order[(k + round) % order.length]!;
+          if (!x) { bases.push(await timed(() => perf(g, budget, { ...short, url: home, overlayMs: stuck(first) }))); continue; }
+          try { x.runs.push(await timed(() => perf(g, budget, { ...short, setup: variantSetup(x.v), url: variantUrl(home, x.v), overlayMs: stuck(first) }))); }
+          catch (e) { x.error = (e as Error).message.split("\n")[0]!; }
+        }
+        if (round + 1 >= RUNS_FLOOR) for (const x of todo) x.settled = !!x.runs.length && compare(stats(bases), stats(x.runs)).settled;
+        if (!room()) break;
+      }
+      // the rows show the run nearest each side's median, so the baseline's verdict, costs and picture keep their shape
+      const nearest = (ps: PerfResult[]) => { const m = stats(ps).sort((x, y) => x - y)[ps.length >> 1]!; return ps.reduce((b, p) => Math.abs(cost(p) - m) < Math.abs(cost(b) - m) ? p : b); };
+      const near = nearest(bases), net = first.overBudget.filter(k => k === "scriptMB" || k === "firstSceneFrameMs");
+      const base: PerfResult = near === first ? first : { ...near, firstFrame: first.firstFrame, overlay: first.overlay, costs: first.costs, overBudget: [...near.overBudget, ...net] };
       // draw calls and triangles are counts, not samples: halved draw calls read only "within the noise of the baseline" (#163)
       const change = (n: number, b: number, what: string) => { const pct = Math.round((n - b) / Math.max(b, 1) * 100); return Math.abs(pct) > 2 ? `${pct < 0 ? "−" : "+"}${Math.abs(pct)}% ${what}` : ""; };
       const counts = (p: PerfResult) => [change(p.calls, base.calls, "draw calls"), change(p.triangles, base.triangles, "triangles")].filter(Boolean).join(", ");
-      const line = (label: string, p: PerfResult) => `${label}: ${p.median} ms median (p95 ${p.p95})${p.work ? `, work ${p.work.ms} ms` : ""}, ${p.calls} draw calls, ${p.triangles} triangles` +
-        `; ${p === base ? budgetText(p.overBudget, budget, felt(p), name) : [delta(p), counts(p)].filter(Boolean).join("; ")}`;
-      rows.push(line("baseline", base));
-      for (const [i, v] of variants.entries()) {
-        const label = v.label ?? ([v.query !== undefined && `?${v.query.replace(/^\?/, "")}`, v.hide?.length && `hide ${v.hide.join(", ")}`, v.pixelRatio && `pixel ratio ${v.pixelRatio}`, v.code && "code"].filter(Boolean).join(", ") || `variant ${i + 1}`);
-        const run = () => perf(g, budget, { setup: variantSetup(v), url: variantUrl(home, v), throttle, work: true, overlayMs: stuck(base) }), off = (p: PerfResult) => Math.abs(cost(p) - cost(base));
-        // a change past 3× the noise and a quarter of the frame is measured again and the smaller kept: one stalled sample
-        // read as +2148% for hiding a 2-triangle plane (opinion-8, #67)
-        try { let p = await run(); if (off(p) > Math.max(3 * base.noiseMs, cost(base) / 4)) { const q = await run(); if (off(q) < off(p)) p = q; } rows.push(line(label, p)); }
-        catch (e) { rows.push(`${label}: ${(e as Error).message.split("\n")[0]}`); }
-      }
+      const line = (label: string, p: PerfResult, verdict: string) => `${label}: ${p.median} ms median (p95 ${p.p95})${p.work ? `, work ${p.work.ms} ms` : ""}, ${p.calls} draw calls, ${p.triangles} triangles; ${verdict}`;
+      const rows = [line("baseline", base, budgetText(base.overBudget, budget, felt(base), name)),
+        ...vs.map(x => x.runs.length ? line(x.label, nearest(x.runs), [compare(stats(bases), stats(x.runs), paced).text, counts(nearest(x.runs))].filter(Boolean).join("; ")) : `${x.label}: ${x.error || "not measured: the call reached its time limit first"}`)];
+      const bc = stats(bases), mean = bc.reduce((s, c) => s + c, 0) / bc.length, sd = Math.sqrt(bc.reduce((s, c) => s + (c - mean) ** 2, 0) / Math.max(1, bc.length - 1));
+      const spread = `Baseline over ${bc.length} load${bc.length > 1 ? "s" : ""}: ${bc.sort((x, y) => x - y)[bc.length >> 1]} ms median${paced ? " work" : ""}, runs spread ${Math.round(sd / mean * 100)}%.`;
       await g.reload(undefined, home); // nothing a variant hid, changed or loaded with stays in the page
       recordPlain("perf", await shot(g, "perf"), Date.now() - start, { perf: base });
-      return text(`${rows.join("\n")}${slowed(throttle)}${proxy}\nWork: the median of the frames that drew, of ${WORK_IS}.${paced ? ` The baseline's ${base.median} ms is pacing, not work, so each variant is compared on its work: ${PACED}` : ""}\nNoise between two samples of the baseline: ${base.noiseMs} ms. ${loaded(base)}\n${hostLoad()} ${gpuLine(g)}\nThe page is reloaded as it was.${costs(base)}`);
+      return text(`${rows.join("\n")}${slowed(throttle)}${proxy}\nWork: the median of the frames that drew, of ${WORK_IS}.${paced ? ` The baseline's ${base.median} ms is pacing, not work, so each variant is compared on its work: ${PACED}` : ""}\n${spread} ${loaded(base)}\n${hostLoad()} ${gpuLine(g)}\nThe page is reloaded as it was.${costs(base)}`);
     }
     const n = g.errors.length;
     const { p, pic } = await g.queue(async () => ({ p: await perf(g, budget, { passes: true, work: true, throttle: a.throttle, network, costs: !!a.costs }), pic: await shot(g, "perf") })); // one entry, so a socket check cannot run between the measure and its picture
@@ -816,7 +855,7 @@ const TOOL_FNS: Record<string, (a: Record<string, any>) => Promise<Result>> = {
 
   async test() {
     const g = need();
-    return text((await runCheck(g, cwd, { tests: true })).text);
+    return text((await runCheck(g, cwd, { tests: true, reload: false })).text);
   },
 
 
@@ -848,7 +887,8 @@ const TOOL_FNS: Record<string, (a: Record<string, any>) => Promise<Result>> = {
     if (a.compare) {
       if (!game) throw new Error("reference: compare needs the page open: call `open` first, or leave compare out to read the picture alone");
       const cam = a.camera ? namedOr(dir, a.camera) : viewpoint(dir, file); kept = !a.camera && !!cam;
-      lookPng = (await (cam ? lookFrom(game, cam) : look(game))).picture;
+      const quiet = { peek: true, surfaces: false }; // the reply shows only the picture, so the look leaves nothing for the next look to compare against
+      lookPng = (await (cam ? lookFrom(game, cam, quiet) : look(game, quiet))).picture;
     }
     if (!(await chrome?.catch(() => null))?.connected) chrome = launchChrome(); // the canvas work runs in the shared Chrome, page open or not
     const r = await reference(chrome!, { file, crop: a.crop, grid: a.grid, sample: a.sample, look: lookPng, cells: a.cells }, name);
@@ -880,6 +920,7 @@ let calls: Promise<unknown> = Promise.resolve();
 // the tool whose call is running now, named by a call that waits behind it (report 7b22b0d6: an `interact` queued
 // 111 s behind a backgrounded look sheet and nothing said so)
 let running: string | null = null;
+const HOOK = "after-edit hook"; // `running` while the control socket's check runs
 /** Runs one tools/call after every earlier one (a client may send them in parallel, and `open` swaps the game);
     a tool's own failure is an isError result for the model. */
 // Tools that read or drive the page reload it first when the sources changed since it loaded: agents reopened with
@@ -924,7 +965,7 @@ function noteTest(g: Game, l?: Look, keyFrames = 0, own = true): string {
     const base = hookFaults.get(g);
     if (own && (!base || base.frame === l.frame)) hookFaults.set(g, { frame: l.frame, lines: faultDiff(base?.lines ?? [], [...l.setup ?? [], ...l.surfaces ?? []], !!l.unchecked).kept });
   }
-  return l ? lookText(l) : "";
+  return l ? short("look", lookText(l)) : "";
 }
 
 /** What the finish check's "still plain" item quotes from the last look: the subject's share of the frame, the objects'
@@ -953,7 +994,7 @@ const keyFramesOf = (steps: Step[] = [], ran?: number) => !steps.some(s => "key"
 // in an AA-3D excavator cell, waiting on something that never came. Checks, opens and `perf` with optimize get twice as long.
 const LIMIT_MS = Number(process.env.PAPRIKA3D_CALL_LIMIT_MS) || 10 * 60_000;
 const BOUND_MS = Number(process.env.PAPRIKA3D_BOUND_MS) || 30_000;
-const LONG = new Set(["open", "check", "contract"]);
+const LONG = new Set(["open", "check", "contract", "test"]); // `test` reruns the same saved checks as the hook's `check` (#205)
 class Hung extends Error {}
 /** The one reply for a call stopped because its page hung or never finished: what happened, and that the game starts over. */
 // on a busy host the page can be starved rather than stuck: four of four feel-5 agents searched their code for a loop at
@@ -965,12 +1006,13 @@ const hung = (name: string, what: string) => {
     : "Find"} what never ends before running it again: an endless loop in the game or in code you ran, or a frame that waits on something that never comes (a network request, audio, a worker).`);
 };
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-/** p, unless the page of `page()` stops answering for the bound or p outlives the limit: then that page is abandoned
-    and, once p settles (10 s at most), a Hung error. Also used for the control socket's and the CLI's checks. */
-export async function guarded<T>(p: Promise<T>, name: string, page: () => Game | null, long = LONG.has(name)): Promise<T> {
+/** p, unless the page of `page()` stops answering for the bound or p outlives the limit, counted from `start` (the
+    call's, so its rerun after a navigation gets only what is left): then that page is abandoned and, once p settles
+    (10 s at most), a Hung error. Also used for the control socket's and the CLI's checks. */
+export async function guarded<T>(p: Promise<T>, name: string, page: () => Game | null, long = LONG.has(name), start = Date.now()): Promise<T> {
   // the bound grows with the host's load: at load 64 to 98 on 8 cores a look's pass alone was silent for 30 s, and
   // pages that were starved, not stuck, were thrown away 20 to 36 times a cell (feel-5)
-  const limit = long ? 2 * LIMIT_MS : LIMIT_MS, start = Date.now();
+  const limit = long ? 2 * LIMIT_MS : LIMIT_MS;
   const bound = () => (long ? 2 : 1) * BOUND_MS * Math.min(4, Math.max(1, loadavg()[0]! / cpus().length)); // 4x at most: an endless loop still ends in 2 min
   let done = false, heard = start;
   const settled = p.then(() => { done = true; }, () => { done = true; });
@@ -1111,16 +1153,17 @@ function call(name: string, args: Record<string, any>): Promise<Result> {
   // `perf` with optimize runs a trial per switch and the final test, as `check` runs keypoints: the long tools' bound, and
   // no page-error list after it (a reverted switch's error is in its row)
   const optimizing = name === "perf" && !!args.optimize;
-  const once = () => answer(name, (async () => {
+  const once = (start: number) => answer(name, (async () => {
     use(named);
     let note = "";
     const from = game ? told.get(game) ?? game.errors.length : 0; // a game running in real time can throw between calls
     if (name !== "open" && gone()) { await reopen(); note = `${REOPENED}${newRun()}\n`; }
     else if (game && (FRESH.has(name) || name === "reference" && args.compare)) { // reference reads the page only to compare (#149)
       const print = fingerprint(cwd);
-      if (print !== loadedPrint) { await game.reload(); loadedPrint = print; note = reloaded(game.loadMs); }
+      if (print !== loadedPrint) { owed.delete(game); await game.reload(); loadedPrint = print; note = reloaded(game.loadMs); }
       else if (hookReset.has(game) && name !== "feel") note = HOOK_RESET; // it reloads anyway
     }
+    if (game && !selfFresh(name, args) && owed.delete(game)) await game.reload();
     if (game) hookReset.delete(game);
     const r = await tool(args);
     // after an error's first line and the lines it threw at: a reply that began "Reloaded (sources changed)" read as that (#166)
@@ -1128,21 +1171,23 @@ function call(name: string, args: Record<string, any>): Promise<Result> {
     if (game && !OWN_ERRORS.has(name) && !optimizing && r.content[0]?.type === "text") r.content[0] = { type: "text", text: r.content[0].text + errorsText(game.errors.slice(from)) };
     if (game) told.set(game, game.errors.length);
     return r;
-  })(), () => game, LONG.has(name) || optimizing);
+  })(), () => game, LONG.has(name) || optimizing, start);
   const arrived = Date.now(), before = running;
   const run = calls.then(async () => {
     const waited = Date.now() - arrived;
     running = name;
-    let r = await once(); // answer() turns every failure into a reply, so this never throws
+    // one limit for the call: a rerun after a navigation with a limit of its own ran a call to 12 to 19 min (telemetry 2026-10-25)
+    const start = Date.now();
+    let r = await once(start); // answer() turns every failure into a reply, so this never throws
     if (r.isError && body(r).includes(NAVIGATED)) { // an engine's notes can follow the message (answer())
-      const again = await once();
+      const again = await once(start);
       const cause = /\n(Vite reloaded it|The dev server reloaded it)[^\n]*/.exec(body(r))?.[0].slice(1) ?? ""; // the first try's cause, for a second try that ran
       r = again.isError && body(again).includes(NAVIGATED) ? withText(again, body(again).replace(NAVIGATED, NAVIGATED_TWICE)) : again.isError ? again : withText(again, RERAN + (cause && `${cause}\n`) + body(again));
     }
     running = null;
     // both builds: a failed reply asks for a report, since no tester's agent sent one unasked (telemetry 2026-10-20)
     if (FEEDBACK && r.isError && REPORT_ASK && r.content[0]?.type === "text") r = withText(r, body(r) + REPORT_ASK);
-    if (waited > 5000) r = withText(r, `Waited ${Math.round(waited / 1000)} s for ${before ? `the \`${before}\` call` : "the calls"} before this one to finish (calls run one at a time).\n` + body(r));
+    if (waited > 5000) r = withText(r, `Waited ${Math.round(waited / 1000)} s for ${before === HOOK ? "the after-edit hook's check of the saved checks" : before ? `the \`${before}\` call` : "the calls"} before this one to finish (calls run one at a time).\n` + body(r));
     return r;
   });
   calls = run;
@@ -1154,12 +1199,12 @@ const heard = new WeakMap<Game, { length: number; last?: string }>(); // where e
 /** One call's reply from its run p, bound by guarded(): p's result, or its failure as a reply (a hung page, what the
     engine lacks, a navigation under the call, a closed Chrome, a protocol timeout), with the engine's notes after it.
     page() is the call's game; test/engines.test.ts drives an engine's game through here. */
-export function answer(name: string, p: Promise<Result>, page: () => Game | null, long?: boolean): Promise<Result> {
+export function answer(name: string, p: Promise<Result>, page: () => Game | null, long?: boolean, start?: number): Promise<Result> {
   // the dev server's lines since the game's last call began: Vite's reload is a timer on the page's paused clock, so a
   // reload it sent during one call (an `eval`'s lazy import) lands in the next call that steps a frame
   const g0 = page(), log = g0?.serverLog, from = (g0 && heard.get(g0)) ?? { length: 0 };
   if (g0) heard.set(g0, { length: g0.serverLog.length, last: g0.serverLog.at(-1) });
-  return guarded(p, name, page, long).catch(async e => {
+  return guarded(p, name, page, long, start).catch(async e => {
     const game = page();
     if (e instanceof Hung) return fail(e.message);
     // what Firefox lacks (src/engines.ts), one line for every tool

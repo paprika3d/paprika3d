@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.1 (2026-10-29)
+
+`perf` with `variants` repeats each measure over fresh page loads and says a change only when it holds across them:
+two loads of the same page differ by 2 to 4 times the spread inside one sample, so a variant that changed nothing read
+as a change 5 to 8 times in 16 against the old noise line. Each call runs rounds of one baseline run and one run of each
+variant still undecided, until the variant's 95% interval on the ratio to the baseline is narrow or clearly away from 1,
+8 rounds, or 45 s. A row reads `−45% (−58% to −27%) vs baseline over 4 runs` or `no clear change (−10% to +13%, 8 runs)`,
+and the noise line is now `Baseline over N loads: M ms median, runs spread X%` (#163).
+
+Look sheets, cameras, viewports and scroll sweeps skip the z-fighting check, which their replies never print, and probe
+the page size once per size instead of on every cell: sheets are 6% to 28% faster on the test pages, with the same
+replies and pictures. A sheet's or `test`'s closing reload is left to the next call when that call reloads first anyway,
+saving one reload of a 3-cell sheet's 4. `interact` `hover` and `reference` `compare` skip the same check (hover 32% to
+55% faster, compare 36% to 54%), and pictures are decoded in the page with `Uint8Array.fromBase64`, so `reference` on a
+large photo, `model_audit` shrink and `record: "video"` are 11% to 39% faster. A call's 10 or 20 min limit now covers
+its rerun after the page navigates, where a rerun got a whole limit of its own and some calls ran 12 to 19 min (#204).
+A call queued behind the after-edit hook's check of the saved checks starts its limit when it runs and opens with how
+long it waited, where it spent its own limit waiting and could time out at 10 min (#205).
+
 ## 0.3.0 (2026-10-29)
 
 A minor version because the tool list changes: the `optimize` tool folds into `perf` (below), so the stable build lists

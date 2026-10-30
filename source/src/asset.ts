@@ -73,7 +73,7 @@ async function drawSheet(pics: (string | null)[], cell: number): Promise<string>
   g.fillStyle = "#222"; g.fillRect(0, 0, c.width, c.height);
   for (let i = 0; i < pics.length; i++) {
     const x = i * cell, b64 = pics[i];
-    const img = b64 ? await createImageBitmap(new Blob([Uint8Array.from(atob(b64), ch => ch.charCodeAt(0))])).catch(() => null) : null;
+    const img = b64 ? await createImageBitmap(new Blob([Uint8Array.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), ch => ch.charCodeAt(0))])).catch(() => null) : null; // as PNG_BLOB in look.ts
     if (img) { const k = Math.min((cell - 4) / img.width, (cell - 4) / img.height), w = img.width * k, h = img.height * k; g.drawImage(img, x + (cell - w) / 2, (cell - h) / 2, w, h); }
     else { g.fillStyle = "#999"; g.font = "13px sans-serif"; g.fillText("no picture", x + 48, cell / 2 + 4); }
     g.fillStyle = "rgba(0, 0, 0, 0.75)"; g.fillRect(x + 2, 2, 24, 22);

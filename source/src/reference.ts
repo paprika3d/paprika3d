@@ -26,7 +26,7 @@ export async function utilPage(chrome: Promise<Browser>): Promise<Page> {
 
 /** Runs in the page: decodes the picture (and the look), samples, crops and grids or composes the comparison, returns a JPEG. */
 async function inPage(a: { pic: string; look: string | null; crop: number[] | null; grid: number; sample: number[][]; panel: number; channel: number; cells: number }): Promise<Reference> {
-  const img = (b64: string) => createImageBitmap(new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))]));
+  const img = (b64: string) => createImageBitmap(new Blob([Uint8Array.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), c => c.charCodeAt(0))])); // as PNG_BLOB in look.ts
   const pic = await img(a.pic), W = pic.width, H = pic.height;
   const canvas = (w: number, h: number) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
   const hex = (rgb: number[]) => "#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("");

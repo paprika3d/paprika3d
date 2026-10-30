@@ -201,7 +201,7 @@ const ENCODER = `(async () => {
   window.__harnessVideo = {
     async add(jpeg) {
       if (failed) throw new Error(failed);
-      const bmp = await createImageBitmap(new Blob([Uint8Array.from(atob(jpeg), c => c.charCodeAt(0))]));
+      const bmp = await createImageBitmap(new Blob([Uint8Array.fromBase64?.(jpeg) ?? Uint8Array.from(atob(jpeg), c => c.charCodeAt(0))])); // as PNG_BLOB in look.ts
       // sized by the first picture, rounded down to even (4:2:0); a later picture of another size (after a resize step) is scaled to it
       const w = bmp.width & ~1, h = bmp.height & ~1;
       if (!enc) {

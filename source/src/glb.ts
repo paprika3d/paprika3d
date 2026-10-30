@@ -143,7 +143,7 @@ export function assetsText(cwd: string, path: string, target: Target): string {
 
 // Runs in Chrome: a texture's image capped at `cap` px on its longer side, as WebP (base64), or null when it is no larger
 const RESIZE = async (b64: string, cap: number) => {
-  const blob = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))]);
+  const blob = new Blob([Uint8Array.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), c => c.charCodeAt(0))]); // as PNG_BLOB in look.ts
   const full = await createImageBitmap(blob), k = cap / Math.max(full.width, full.height);
   if (k >= 1) return null;
   const w = Math.max(1, Math.round(full.width * k)), h = Math.max(1, Math.round(full.height * k));

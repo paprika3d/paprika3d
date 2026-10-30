@@ -279,6 +279,48 @@ const round = (n: number) => Math.round(n * 100) / 100;
 const pick = (sorted: number[], q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] ?? 0;
 const sortNum = (a: number[]) => [...a].sort((x, y) => x - y);
 
+// Comparing a variant with the baseline over several page runs (one statistic a run): run-to-run spread between loads is
+// larger than the spread within one load's sample, so a variant is judged on an interval over runs, not on noiseMs.
+const T95 = [12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228, 2.201, 2.179, 2.160, 2.145, 2.131,
+  2.120, 2.110, 2.101, 2.093, 2.086, 2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042]; // 95% two-sided t quantiles for df 1 to 30; past 30, 1.96
+/** The variant's statistic over the baseline's as a ratio with its 95% interval: Welch's t interval on the difference of
+    the means of log(x), turned back with exp, Welch–Satterthwaite df floored (the larger quantile). Zero spread on both
+    sides gives a point interval (lo = hi = ratio); fewer than two runs a side gives 0 to Infinity. */
+export function ratioInterval(base: number[], variant: number[]): { ratio: number; lo: number; hi: number } {
+  const stats = (x: number[]) => { const l = x.map(Math.log), m = l.reduce((s, v) => s + v, 0) / l.length;
+    return { m, v: l.reduce((s, v) => s + (v - m) ** 2, 0) / (l.length - 1) / l.length, n: l.length }; }; // v: the mean's variance
+  const a = stats(base), b = stats(variant), ratio = Math.exp(b.m - a.m), se2 = a.v + b.v;
+  if (a.n < 2 || b.n < 2) return { ratio, lo: 0, hi: Infinity };
+  const df = se2 ** 2 / (a.v ** 2 / (a.n - 1) + b.v ** 2 / (b.n - 1)); // NaN when se2 is 0, and then the half-width is 0 anyway
+  const half = (T95[Math.floor(df) - 1] ?? 1.96) * Math.sqrt(se2);
+  return { ratio, lo: Math.exp(b.m - a.m - half), hi: Math.exp(b.m - a.m + half) };
+}
+/** A ratio interval settles the question: its half-width is at most `width` percent of the ratio (precise enough to say
+    "no clear change" or the size of one), or it lies wholly more than `floor` percent above or below 1. */
+export const decided = (r: { ratio: number; lo: number; hi: number }, { width, floor }: { width: number; floor: number }) =>
+  (r.hi - r.lo) / 2 / r.ratio * 100 <= width || r.lo > 1 + floor / 100 || r.hi < 1 - floor / 100;
+
+// `perf` with variants, from the Studio calibration (docs/optimize-log.md, 2026-10-29, T1 of the perf-runs plan):
+export const RUN_S = 0.25; // a variant samples 0.25 s, the baseline 0.5 s: a 250 ms window spreads across loads as much as a 2 s one
+export const RUN_WARM_MS = 300; // frames were within 2% of steady from 300 ms on every page measured
+export const RUNS_FLOOR = 3; // a 20% change decided in 3.5 rounds on average; floors of 4 and 5 bought no fewer false changes
+export const RUNS_CAP = 8; // about ±7% at cubes' 6.5% run-to-run spread; keeps Welch's df under 30, where t jumps to 1.96
+export const CALL_CAP_S = 45; // about twice a 5-variant call on the 11 ms bloom page before runs repeated (23.5 s)
+export const DECIDED_WIDTH = 10, DECIDED_FLOOR = 5; // percent: 0-4% of no-ops read as a change in the replay, at 4.7-5.2 rounds
+const STEP_MS = 0.1; // Chrome's frame stamp step: a 0.2 ms page with no spread read one step as ±50% on a zero-width interval
+
+/** A variant's run statistics against the baseline's: whether more runs would tell more (`settled` when the interval is
+    decided, or says the change is within one frame stamp step), and the words for its row. A change is said only when
+    settled, its interval excludes 1 and it moves the frame by more than one step; anything else is "no clear change". */
+export function compare(base: number[], variant: number[], work = false): { settled: boolean; text: string } {
+  const r = ratioInterval(base, variant), mid = sortNum(base)[base.length >> 1]!;
+  const settled = decided(r, { width: DECIDED_WIDTH, floor: DECIDED_FLOOR }) || Math.max(r.hi - 1, 1 - r.lo) * mid <= STEP_MS;
+  const pct = (x: number) => { const v = Math.round((x - 1) * 100); return v < 0 ? `−${-v}%` : `+${v}%`; };
+  const runs = `${variant.length} run${variant.length > 1 ? "s" : ""}`;
+  if (settled && (r.lo > 1 || r.hi < 1) && Math.abs(r.ratio - 1) * mid > STEP_MS) return { settled, text: `${pct(r.ratio)} ${work ? "work " : ""}(${pct(r.lo)} to ${pct(r.hi)}) vs baseline over ${runs}` };
+  return { settled, text: `no clear change${work ? " in work" : ""} (${Number.isFinite(r.hi) ? `${pct(r.lo)} to ${pct(r.hi)}, ` : "too few for an interval, "}${runs})` };
+}
+
 // A sample has settled when its frames split into two halves of at least SETTLE_FRAMES whose frame-time medians agree
 // (within 1%, so the same 0.1 ms step of Chrome's frame stamps on a fast scene: at 5% the cubes fixture stopped while its
 // GPU still sped up and read 4.8 ms against 4.7) and whose draw calls, triangles and shader programs are the same. A sample

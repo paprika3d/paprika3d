@@ -477,7 +477,7 @@ export function hover(game: Game, names: string[], frames = 1) {
   return game.queue(async () => {
     const out: { name: string; at?: [number, number]; changed?: Record<string, unknown>; hint?: string; error?: string }[] = [];
     for (const name of names) {
-      const o = (await look(game, { peek: true })).onScreen.find(o => o.name === name);
+      const o = (await look(game, { peek: true, surfaces: false })).onScreen.find(o => o.name === name);
       if (!o) { out.push({ name, error: "not on screen in the ID image" }); continue; }
       const [x0, y0, x1, y1] = o.bbox, x = Math.round((x0 + x1) / 2), y = Math.round((y0 + y1) / 2);
       const r = await act(game, [{ mouse: "move", x, y, frames }]);

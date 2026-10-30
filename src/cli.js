@@ -48404,7 +48404,7 @@ function hover(game, names, frames = 1) {
   return game.queue(async () => {
     let out = [];
     for (let name of names) {
-      let o = (await look(game, { peek: !0 })).onScreen.find((o2) => o2.name === name);
+      let o = (await look(game, { peek: !0, surfaces: !1 })).onScreen.find((o2) => o2.name === name);
       if (!o) {
         out.push({ name, error: "not on screen in the ID image" });
         continue;
@@ -48910,8 +48910,8 @@ async function keepSeed(game, fn) {
       await game.page.evaluate(`__clock.reseed(${seed})`).catch(() => {});
   }
 }
-async function pageFaults(page, known) {
-  let all = await page.evaluate(SETUP).catch(() => []), coplanar = await page.evaluate(COPLANAR).catch(() => []), hidden = [], keep = (l) => {
+async function pageFaults(page, known, fights = !0) {
+  let all = await page.evaluate(SETUP).catch(() => []), coplanar = fights ? await page.evaluate(COPLANAR).catch(() => []) : [], hidden = [], keep = (l) => {
     let k = known?.line(l);
     if (k)
       hidden.push(k);
@@ -48930,9 +48930,9 @@ async function knownOf(page) {
     name: (n) => k.find((x2) => x2.toLowerCase() === n.toLowerCase())
   };
 }
-function look(game, { moved = !1, peek = !1, edited = !1 } = {}) {
+function look(game, { moved = !1, peek = !1, edited = !1, hint = !0, surfaces: fights = !0, probed } = {}) {
   return game.queue(() => keepSeed(game, async () => {
-    let { page } = game, resized = await resizeProbe(game);
+    let { page } = game, resized = await resizeProbe(game, probed);
     await page.evaluate(FIRST);
     let { views, raw, revision, webgpu, offscreen, state } = await page.evaluate(`${REDRAW(moved)}
       ({ views: __harness.views.size, raw: __harness.gl.size > 0 && !__harness.renderers.length, revision: String(__harness.revision),
@@ -48962,14 +48962,16 @@ function look(game, { moved = !1, peek = !1, edited = !1 } = {}) {
       lastState.set(game, state);
     if (!views || c && !(c.buffer[0] && c.buffer[1]))
       return { picture, ids: "", onScreen: [], neverVisible: [], covers: [], subject: null, pixels, canvas, canvasSame, frame: c?.frame, ...stale };
-    let covers = await page.evaluate("__harness.covers()"), veil = covers.find((c2) => c2.over >= 0.9 && c2.opacity >= 0.95 && /^rgb\(/.test(c2.background ?? "")), r = await page.evaluate(PASS_FN, threeUrl(game, revision, webgpu), st ? null : png);
-    if (writeFileSync5(ids, Buffer.from(r.png, "base64")), veil) {
+    let covers = await page.evaluate("__harness.covers()"), veil = covers.find((c2) => c2.over >= 0.9 && c2.opacity >= 0.95 && /^rgb\(/.test(c2.background ?? "")), r = await page.evaluate(PASS_FN, threeUrl(game, revision, webgpu), st ? null : png, !fights);
+    if (r.png)
+      writeFileSync5(ids, Buffer.from(r.png, "base64"));
+    if (veil) {
       if (r.surface = null, r.depth = null, r.objects = null, r.subject && !("absent" in r.subject))
         delete r.subject.contrast;
     }
     if (pixels && r.objects)
       pixels.objects = r.objects;
-    let { setup, surfaces, unchecked, hidden } = await pageFaults(page, known), surfaceKnown = r.surface ? surfaceText(r.surface).map(known.line).find(Boolean) : void 0;
+    let { setup, surfaces, unchecked, hidden } = await pageFaults(page, known, fights), surfaceKnown = r.surface ? surfaceText(r.surface).map(known.line).find(Boolean) : void 0;
     if (surfaceKnown)
       r.surface = null;
     let lines = faultLines({ setup, surfaces, surface: r.surface ?? void 0 }), ft = lines.map(faultKey).join(`
@@ -49009,7 +49011,7 @@ function look(game, { moved = !1, peek = !1, edited = !1 } = {}) {
       let said = lastHint.get(game) ?? /* @__PURE__ */ new Set;
       if (said.has(subject.name))
         subject.hintSaid = !0;
-      else if (!peek)
+      else if (!peek && hint)
         lastHint.set(game, said.add(subject.name));
     }
     let kept = {};
@@ -49039,11 +49041,11 @@ function faultsNow(game) {
     return { lines: [...setup, ...surfaces], frame, partial: unchecked.length > 0 };
   }));
 }
-function lookFrom(game, cam) {
+function lookFrom(game, cam, { surfaces = !0, peek = !1 } = {}) {
   return game.queue(() => keepSeed(game, async () => {
     let restore = await placeCam(game, cam);
     try {
-      return await look(game, { moved: !0 });
+      return await look(game, { moved: !0, surfaces, peek });
     } finally {
       await restore();
     }
@@ -49056,7 +49058,7 @@ function cameras(game, cwd, cams) {
     let cells = [], said = new Set(lastHint.get(game));
     try {
       for (let c of cams) {
-        let { left, ...l } = await lookFrom(game, c);
+        let { left, ...l } = await lookFrom(game, c, { surfaces: !1 });
         cells.push({ label: c.label ?? `[${c.position.join(", ")}]${c.lookAt ? ` at [${c.lookAt.join(", ")}]` : ""}`, look: l });
       }
     } finally {
@@ -49122,20 +49124,19 @@ async function screenshot(page, path14) {
   let v2 = page.viewport(), dpr = v2?.deviceScaleFactor ?? 1;
   if (!v2 || dpr === 1)
     return page.screenshot({ path: path14 });
-  let png = Buffer.from(await page.evaluate(`(async (b64) => {
-    const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode();
-    const c = document.createElement("canvas"), x = c.getContext("2d");
-    c.width = ${v2.width}; c.height = ${v2.height}; x.imageSmoothingQuality = "high"; x.drawImage(i, 0, 0, c.width, c.height);
-    return c.toDataURL("image/png").split(",")[1]; })(${JSON.stringify(await page.screenshot({ encoding: "base64" }))})`), "base64");
+  let png = Buffer.from(await page.evaluate(SHRINK_FN, await page.screenshot({ encoding: "base64" }), v2.width, v2.height), "base64");
   if (path14)
     writeFileSync5(path14, png);
   return png;
 }
-async function resizeProbe(game) {
+async function resizeProbe(game, probed) {
   let { page } = game, v2 = page.viewport(), at = await page.evaluate(`(() => { const h = __harness, c = h.canvas();
     return !c ? null : h.resized ?? (h.main()?.[1].screen && h.frame.some(e => e.target) ? null : [c.width, c.height, scrollX, scrollY]); })()`);
   if (!Array.isArray(at) || !v2)
     return at;
+  let key2 = JSON.stringify(v2), was = probed?.get(key2);
+  if (was !== void 0)
+    return await page.evaluate(`__harness.resized = ${JSON.stringify(was)}`), was;
   let until = (cond, afterEvent = !1) => page.evaluate(`(async () => {
     if (${afterEvent}) await Promise.race([__harnessResize, __clock.realSleep(500)]);
     for (let i = 0; i < ${afterEvent ? 10 : 50}; i++) { const c = __harness.canvas(); if (c && (${cond})) return true; await __clock.realSleep(10); }
@@ -49148,7 +49149,7 @@ async function resizeProbe(game) {
     await until(`c.width === ${at[0]} && c.height === ${at[1]}`);
   await page.evaluate(`scrollTo({ left: ${at[2]}, top: ${at[3]}, behavior: "instant" })`);
   let resized = fixed ? "fixed" : ran;
-  return await page.evaluate(`__harness.resized = ${JSON.stringify(resized)}`), resized;
+  return await page.evaluate(`__harness.resized = ${JSON.stringify(resized)}`), probed?.set(key2, resized), resized;
 }
 function canvasText(c) {
   if (!c)
@@ -49273,11 +49274,11 @@ function lookText(l) {
   ].join(`
 `);
 }
-function sheet(game, items) {
+function sheet(game, items, { reload = !0 } = {}) {
   return game.queue(async () => {
     if (!items.length || items.length > SHEET_MAX)
       throw Error(`look: a sheet takes 1 to ${SHEET_MAX} moments`);
-    let shots = [], labels = [], missed = [], cells = [], start = Date.now(), said = new Set(lastHint.get(game)), failed;
+    let shots = [], labels = [], missed = [], cells = [], start = Date.now(), said = new Set(lastHint.get(game)), probed = /* @__PURE__ */ new Map, failed;
     for (let [i, it] of items.entries()) {
       let label = it.label ?? (it.state ? JSON.stringify(it.state).slice(0, 60) : String(i + 1));
       if (Date.now() - start > 480000) {
@@ -49298,7 +49299,7 @@ function sheet(game, items) {
           await act(game, it.steps);
         for (let left = Math.max(1, Math.floor(it.frames ?? 1));left > 0; left -= 10)
           await game.page.evaluate(`__clock.step(${Math.min(left, 10)})`);
-        let l = await look(game);
+        let l = await look(game, { surfaces: !1, probed });
         shots.push(readFileSync11(l.picture).toString("base64")), labels.push(label), cells.push({ label, look: l });
       } catch (e) {
         if (!/timed out/.test(String(e?.message)))
@@ -49308,7 +49309,9 @@ function sheet(game, items) {
     }
     if (!shots.length)
       throw failed;
-    await game.reload(), lastFaults.delete(game), lastHint.set(game, said), lastNumbers.delete(game);
+    if (reload)
+      await game.reload();
+    lastFaults.delete(game), lastHint.set(game, said), lastNumbers.delete(game);
     let run2 = runs.get(game) ?? { n: 0, all: /* @__PURE__ */ new Set, seen: /* @__PURE__ */ new Set, where: /* @__PURE__ */ new Map };
     runs.set(game, run2);
     let picture = join11(game.runDir, `look-${++run2.n}-sheet.png`);
@@ -49329,7 +49332,7 @@ function viewports(game, items) {
     game.resized = void 0;
     try {
       for (let [i, v2] of sizes.entries())
-        await game.page.setViewport({ ...own, ...v2 }), await game.reload(), cells.push({ label: `${typeof items[i] === "string" ? `${items[i]} ` : ""}${v2.width}x${v2.height}@${v2.deviceScaleFactor}`, look: await look(game) });
+        await game.page.setViewport({ ...own, ...v2 }), await game.reload(), cells.push({ label: `${typeof items[i] === "string" ? `${items[i]} ` : ""}${v2.width}x${v2.height}@${v2.deviceScaleFactor}`, look: await look(game, { surfaces: !1 }) });
     } finally {
       await game.page.setViewport(own), await game.reload(), lastFaults.delete(game), lastHint.set(game, said), lastNumbers.delete(game);
     }
@@ -49350,6 +49353,39 @@ function sheetText(cells) {
     ];
   });
 }
+function shortText(tool, text) {
+  let lines = text.split(`
+`), out = [], look2 = tool === "look";
+  for (let i = 0;i < lines.length; i++) {
+    let line = lines[i];
+    if (look2 ||= line.startsWith("Picture: "), !look2) {
+      out.push(line);
+      continue;
+    }
+    if (FOLDED.test(line))
+      continue;
+    if (NOTELESS.test(line)) {
+      if (lines[i + 1]?.startsWith("Hues: "))
+        i++;
+      continue;
+    }
+    if (tool === "interact" && ACT_DROP.test(line))
+      continue;
+    if (/^On screen \(\d+\):$/.test(line)) {
+      let end = i + 1;
+      while (end < lines.length && !lines[end].startsWith("Never visible: "))
+        end++;
+      let all = lines.slice(i + 1, end), tail = /^… (\d+) more$/.exec(all.at(-1) ?? ""), items = tail ? all.slice(0, -1) : all;
+      if (tool === "look")
+        out.push(line, ...items.length > SHORT_ON_SCREEN ? [...items.slice(0, SHORT_ON_SCREEN), `… ${items.length - SHORT_ON_SCREEN + Number(tail?.[1] ?? 0)} more`] : all);
+      i = end - 1;
+      continue;
+    }
+    out.push(line.replace(CELL_PIXELS, ""));
+  }
+  return out.join(`
+`);
+}
 function viewportsText(cells) {
   let all = new Set(cells.flatMap((c) => c.look.onScreen.map((o) => o.name)));
   return cells.map(({ label, look: l }) => {
@@ -49361,11 +49397,11 @@ function scrollSweep(game, stops) {
   return game.queue(async () => {
     if (!Array.isArray(stops) || !stops.length || stops.length > SHEET_MAX || !stops.every((p) => typeof p === "number" && p >= 0 && p <= 1))
       throw Error(`look: scroll takes 1 to ${SHEET_MAX} stops from 0 to 1, as in [0, 0.25, 0.5, 0.75, 1]`);
-    let cells = [], said = new Set(lastHint.get(game));
+    let cells = [], said = new Set(lastHint.get(game)), probed = /* @__PURE__ */ new Map;
     try {
       for (let p of stops) {
         await game.reload();
-        let at = (await play(game, [{ scroll: { progress: p } }])).split("; ")[0].replace("Scroll: ", ""), l = await look(game), cam = await game.page.evaluate(`(() => { const c = __harness.main()?.[1].camera, e = c?.matrixWorld.elements, r = n => +n.toFixed(2);
+        let at = (await play(game, [{ scroll: { progress: p } }])).split("; ")[0].replace("Scroll: ", ""), l = await look(game, { surfaces: !1, probed }), cam = await game.page.evaluate(`(() => { const c = __harness.main()?.[1].camera, e = c?.matrixWorld.elements, r = n => +n.toFixed(2);
           if (!e) return null; const k = Math.hypot(e[8], e[9], e[10]) || 1; return [[e[12], e[13], e[14]].map(r), [-e[8] / k, -e[9] / k, -e[10] / k].map(r)]; })()`), view2 = cam ? `camera [${cam[0].join(", ")}] looking along [${cam[1].join(", ")}]` : "no three.js camera", names = group(l.onScreen).map((g) => g.name);
         cells.push({
           label: `${Math.round(p * 100)}%: ${view2}`,
@@ -49542,11 +49578,11 @@ function compareBaseline(game, cwd, name) {
     return { look: l, text: `Compare: ${+(pictureDiff(`${base}.png`, l.picture, diff2) * 100).toPrecision(2)}% of pixels differ from ${of2}; diff at ${diff2}` };
   });
 }
-var edgeText = (e) => e ? [`World's edge: ${Math.round(e.share * 100)}% of the picture is background below the horizon, in [${e.bbox.join(", ")}], past the far end of the ground: extend the ground, keep the camera over it, or fade it out with scene.fog.`] : [], VIEW = "const h = window.__harness, [scene, { renderer: r, camera: c0 }] = h.main(), camera = c0 && h.lookCam?.from === c0 ? h.lookCam.to : c0; if (!camera) throw new Error('the page\\'s last render of its scene had no camera (renderer.render(scene, camera) was called with camera undefined): fix the camera, step a frame with `interact` { steps: [{ wait: 1 }] } and look again');", DRAW, HUE = `const HUES = ["red", "orange", "yellow", "green", "cyan", "blue", "violet", "magenta", "grey"];
+var edgeText = (e) => e ? [`World's edge: ${Math.round(e.share * 100)}% of the picture is background below the horizon, in [${e.bbox.join(", ")}], past the far end of the ground: extend the ground, keep the camera over it, or fade it out with scene.fog.`] : [], VIEW = "const h = window.__harness, [scene, { renderer: r, camera: c0 }] = h.main(), camera = c0 && h.lookCam?.from === c0 ? h.lookCam.to : c0; if (!camera) throw new Error('the page\\'s last render of its scene had no camera (renderer.render(scene, camera) was called with camera undefined): fix the camera, step a frame with `interact` { steps: [{ wait: 1 }] } and look again');", DRAW, PNG_BLOB = '(s => new Blob([Uint8Array.fromBase64?.(s) ?? Uint8Array.from(atob(s), c => c.charCodeAt(0))], { type: "image/png" }))', HUE = `const HUES = ["red", "orange", "yellow", "green", "cyan", "blue", "violet", "magenta", "grey"];
   const bucket = (r, g, b, hi, lo, l, sa) => { if (sa < 0.25 || l < 0.1) return 8; const k = hi - lo, h = hi === r ? ((g - b) / k + 6) % 6 : hi === g ? (b - r) / k + 2 : (r - g) / k + 4; const d = h * 60; return d < 15 || d >= 345 ? 0 : d < 45 ? 1 : d < 70 ? 2 : d < 165 ? 3 : d < 200 ? 4 : d < 260 ? 5 : d < 290 ? 6 : 7; };`, PASS, VIEWS, FIRST = `(async () => { __clock.pause(); if (__harness.main()?.[1].screen) return;
   await __clock.step(1);
   const raw = () => __harness.gl.size && !__harness.renderers.length; // raw WebGL never fills views: don't wait for it
-  for (const end = __clock.realNow() + 5000; !__harness.views.size && !raw() && __clock.realNow() < end;) { await __clock.realSleep(50); await __clock.step(1); } })()`, NOT_DRAWN = "look: the game has not drawn a three.js scene after 5 s of stepping frames; if it is still loading or building, step it with `interact` { steps: [{ wait: frames }] } and look again", REDRAW = (moved) => `if (__harness.views.size && (${moved} || !__harness.frame.some(e => e.target))) ${DRAW};`, runs, PIECE_MIN = 6, PIXELS, PIXELS_FN, PASS_FN, lastState, lastGrid, lastCanvas, lastHint, lastNumbers, lastFaults, FRAME = "Math.max(0, Math.round((__clock.now() - 60000) * 0.06))", CANVAS, blends = ({ bright: [b2, bo], sat: [c, co], edge }) => Math.abs(b2 - bo) < 0.1 && Math.abs(c - co) < 0.1 && edge < 0.08, MOVED = 0.05, topHues = (h = {}) => Object.entries(h).filter(([, v2]) => v2 >= 0.05).sort((a2, b2) => b2[1] - a2[1]).slice(0, 4).map(([k]) => k).join(), numbersOf = (p, c) => p ? { v: [p.brightness, p.saturation, p.black, p.blown, ...c ? [...c.bright, ...c.sat, c.edge] : []], hues: `${topHues(p.hues)}/${topHues(p.objects?.rest?.hues ?? p.objects?.hues)}` } : null, sameNumbers = (a2, b2) => !!a2 && !!b2 && a2.hues === b2.hues && a2.v.length === b2.v.length && a2.v.every((v2, i) => Math.abs(v2 - b2.v[i]) < MOVED), staleText = (l) => [
+  for (const end = __clock.realNow() + 5000; !__harness.views.size && !raw() && __clock.realNow() < end;) { await __clock.realSleep(50); await __clock.step(1); } })()`, NOT_DRAWN = "look: the game has not drawn a three.js scene after 5 s of stepping frames; if it is still loading or building, step it with `interact` { steps: [{ wait: frames }] } and look again", REDRAW = (moved) => `if (__harness.views.size && (${moved} || !__harness.frame.some(e => e.target))) ${DRAW};`, runs, PIECE_MIN = 6, PIXELS, PIXELS_FN, PASS_FN, SHRINK_FN, lastState, lastGrid, lastCanvas, lastHint, lastNumbers, lastFaults, FRAME = "Math.max(0, Math.round((__clock.now() - 60000) * 0.06))", CANVAS, blends = ({ bright: [b2, bo], sat: [c, co], edge }) => Math.abs(b2 - bo) < 0.1 && Math.abs(c - co) < 0.1 && edge < 0.08, MOVED = 0.05, topHues = (h = {}) => Object.entries(h).filter(([, v2]) => v2 >= 0.05).sort((a2, b2) => b2[1] - a2[1]).slice(0, 4).map(([k]) => k).join(), numbersOf = (p, c) => p ? { v: [p.brightness, p.saturation, p.black, p.blown, ...c ? [...c.bright, ...c.sat, c.edge] : []], hues: `${topHues(p.hues)}/${topHues(p.objects?.rest?.hues ?? p.objects?.hues)}` } : null, sameNumbers = (a2, b2) => !!a2 && !!b2 && a2.hues === b2.hues && a2.v.length === b2.v.length && a2.v.every((v2, i) => Math.abs(v2 - b2.v[i]) < MOVED), staleText = (l) => [
   ...l.offscreen ? [`Last frame: every render call drew into a render target (${l.offscreen.join(", ")}), none to the screen, so the canvas still shows an earlier frame: a render target left bound after a pass (setRenderTarget(null) missing, or a saved renderer state restored out of order)?`] : [],
   ...l.unchanged ? [`Nothing in the picture changed since the last look, while observe()'s ${l.unchanged.slice(0, 4).join(", ")}${l.unchanged.length > 4 ? ", …" : ""} changed.`] : []
 ], keysChanged = (a2, b2) => {
@@ -49569,25 +49605,7 @@ var edgeText = (e) => e ? [`World's edge: ${Math.round(e.share * 100)}% of the p
     if (x2.group)
       n.set(x2.group, (n.get(x2.group) ?? 0) + 1);
   return { objects: [...new Set(xs.filter(big).map((x2) => x2.group))].map((g) => ({ name: g, all: xs.filter((x2) => x2.group === g) })), rest: xs.filter((x2) => !big(x2)) };
-}, SHEET_MAX = 9, COMPOSE = `(async (shots, labels) => {
-  const imgs = await Promise.all(shots.map(s => createImageBitmap(new Blob([Uint8Array.from(atob(s), c => c.charCodeAt(0))], { type: "image/png" }))));
-  // up to 3 in one row (3 in a 2 × 2 grid left a black quarter), and each label in a strip above its picture, never over
-  // it (labels covered the game's own score: opinion-4, feel-3)
-  const cols = imgs.length <= 3 ? imgs.length : Math.ceil(Math.sqrt(imgs.length)), rows = Math.ceil(imgs.length / cols);
-  const w = Math.round(Math.max(...imgs.map(i => i.width)) / 2), h = Math.round(Math.max(...imgs.map(i => i.height)) / 2), c = document.createElement("canvas");
-  const fs = Math.max(12, Math.round(h / 22)), lh = fs + 12;
-  c.width = w * cols; c.height = (h + lh) * rows;
-  const ctx = c.getContext("2d");
-  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, c.width, c.height);
-  ctx.font = fs + "px sans-serif"; ctx.textBaseline = "top";
-  imgs.forEach((img, i) => {
-    const x = (i % cols) * w, y = Math.floor(i / cols) * (h + lh);
-    const k = Math.min(w / img.width, h / img.height);
-    ctx.fillStyle = "#fff"; ctx.fillText(labels[i], x + 6, y + 6, w - 12);
-    ctx.drawImage(img, x + (w - img.width * k) / 2, y + lh + (h - img.height * k) / 2, img.width * k, img.height * k);
-  });
-  return c.toDataURL("image/png").split(",")[1];
-})`, zoomOutside = ([x2, y, right, bottom], view2) => [x2, y, right, bottom].every((n) => Number.isFinite(n)) && right - x2 >= 1 && bottom - y >= 1 && x2 >= 0 && y >= 0 && right <= view2.width && bottom <= view2.height ? "" : `look: zoom is [left, top, right, bottom] inside the ${view2.width} × ${view2.height} page`, PROBE, PROBE_FN, CHANNEL = 8, CRC, AT, baselinePath = (cwd, name) => {
+}, SHEET_MAX = 9, COMPOSE, NOTELESS, FOLDED, CELL_PIXELS, ACT_DROP, SHORT_ON_SCREEN = 20, zoomOutside = ([x2, y, right, bottom], view2) => [x2, y, right, bottom].every((n) => Number.isFinite(n)) && right - x2 >= 1 && bottom - y >= 1 && x2 >= 0 && y >= 0 && right <= view2.width && bottom <= view2.height ? "" : `look: zoom is [left, top, right, bottom] inside the ${view2.width} × ${view2.height} page`, PROBE, PROBE_FN, CHANNEL = 8, CRC, AT, baselinePath = (cwd, name) => {
   if (!/^[\w-]{1,64}$/.test(name))
     throw Error("look: a baseline name is up to 64 letters, digits, - or _");
   return join11(harnessDir(cwd), "baselines", name);
@@ -49617,7 +49635,7 @@ var init_look = __esm(() => {
       Object.assign(r.info.render, info);
     }
   }
-})()`, PASS = `(async (url, shot) => { ${HUE}
+})()`, PASS = `(async (url, shot, cell) => { ${HUE}
   ${VIEW} const L = window.__harnessLook ??= {};
   // a mesh seen through: transparent below half opacity, or transparent without writing depth (an additive beam)
   L.see = o => { const m = [o.material].flat()[0]; return !!(o.isMesh && m?.transparent && m.opacity < 0.5); };
@@ -49744,7 +49762,7 @@ var init_look = __esm(() => {
   const rect = r.domElement.getBoundingClientRect();
   // The screenshot (CSS pixels, the whole page) scaled onto the drawing buffer, rows top-down, so pixel t matches buf's.
   // shot is null when PIXELS already decoded this look's screenshot and left it in window.__harnessShot
-  const sc = new OffscreenCanvas(w, ht), sx = sc.getContext("2d"), bm = shot ? await createImageBitmap(await (await fetch("data:image/png;base64," + shot)).blob()) : window.__harnessShot;
+  const sc = new OffscreenCanvas(w, ht), sx = sc.getContext("2d"), bm = shot ? await createImageBitmap(${PNG_BLOB}(shot)) : window.__harnessShot;
   delete window.__harnessShot;
   sx.drawImage(bm, rect.left, rect.top, rect.width, rect.height, 0, 0, w, ht);
   const sd = sx.getImageData(0, 0, w, ht).data;
@@ -49866,7 +49884,7 @@ var init_look = __esm(() => {
   // Depth: whether far objects come out lighter and paler than near ones, by each object's box centre from the camera.
   // shortcut: each instance is its own object and numbered names stay apart (as coverage counts them); group them if one big instanced field skews the thirds.
   let depth = null;
-  if (Box3) {
+  if (Box3 && !cell) {
     const eye = camera.getWorldPosition(camera.position.clone()), v = eye.clone(), M = camera.matrixWorld.clone(), at = [];
     for (const [id, [k]] of seen) {
       const o = objs[owner[id]], g = o?.geometry;
@@ -49889,7 +49907,7 @@ var init_look = __esm(() => {
   // repeats (the highest autocorrelation peak of its high-passed brightness at 8 to 128 px, after the first dip below
   // zero), which a tiling texture shows. A sky dome (BackSide) is left out: it is meant to be smooth.
   let surface = null;
-  try {
+  if (!cell) try {
     const t0 = __clock.realNow(), area = new Map();
     for (const [id, [k]] of seen) {
       const o = objs[owner[id]];
@@ -50013,7 +50031,7 @@ var init_look = __esm(() => {
       if (y > 0 && at(x, y - 1) !== me) { m[6]++; m[7] += Math.abs(lum(t) - lum(t - w * 4)); }
     }
     const f = (v) => +v.toFixed(3);
-    if (m[0] && m[3]) subj.contrast = { bright: [f(m[1] / m[0]), f(m[4] / m[3])], sat: [f(m[2] / m[0]), f(m[5] / m[3])], edge: f(m[6] ? m[7] / m[6] : 0) };
+    if (m[0] && m[3] && !cell) subj.contrast = { bright: [f(m[1] / m[0]), f(m[4] / m[3])], sat: [f(m[2] / m[0]), f(m[5] / m[3])], edge: f(m[6] ? m[7] / m[6] : 0) };
   }
   // for __harness.seam(): whether no object is drawn at page point x, y (GL rows run bottom-up)
   L.free = (x, y) => { const i = Math.floor((x - rect.left) / rect.width * w), j = ht - 1 - Math.floor((y - rect.top) / rect.height * ht), s = (j * w + i) * 4;
@@ -50024,7 +50042,7 @@ var init_look = __esm(() => {
   // coin's or the player's colour (#178, opinion-12): the hues of everything else, with that object's name
   const big = first.filter(id => id < next && objs[owner[id]]).sort((a, b) => cnt[b] - cnt[a])[0], others = big === undefined ? 0 : O[0] - cnt[big];
   if (objects && cnt[big] > w * ht / 2 && others) { const o = objs[owner[big]]; objects.rest = { name: named(o) || o.type, share: +(others / (w * ht)).toPrecision(2), hues: Object.fromEntries(HUES.map((k, i) => [k, r3((O[4 + i] - H[9 * big + i]) / others)])) }; }
-  return { png: c.toDataURL("image/png").split(",")[1], pixels: w * ht, entries, objects, edge: V[0] / (w * ht) > 0.02 && V[5] > w / 2 ? [V[0] / (w * ht), V[1], V[2], V[3], V[4]] : null, names: [...names], seen: [...seenNames], missing: [...missing], subject: subj, depth, surface,
+  return { png: cell ? "" : c.toDataURL("image/png").split(",")[1], pixels: w * ht, entries, objects, edge: V[0] / (w * ht) > 0.02 && V[5] > w / 2 ? [V[0] / (w * ht), V[1], V[2], V[3], V[4]] : null, names: [...names], seen: [...seenNames], missing: [...missing], subject: subj, depth, surface,
     rect: [rect.left, rect.top, rect.width / w, rect.height / ht] };
 })`, VIEWS = `((name) => { ${VIEW}
   const o = scene.getObjectByName(name);
@@ -50081,7 +50099,7 @@ var init_look = __esm(() => {
   return { png: c.toDataURL("image/png").split(",")[1], size: p(size), center: p(center) };
 })`, runs = /* @__PURE__ */ new WeakMap;
   PIXELS = `(async (b64) => {
-  const b = await createImageBitmap(await (await fetch("data:image/png;base64," + b64)).blob()), W = 80, H = 50;
+  const b = await createImageBitmap(${PNG_BLOB}(b64)), W = 80, H = 50;
   window.__harnessShot?.close?.(); window.__harnessShot = b; // PASS draws from it instead of decoding the PNG again
   const c = new OffscreenCanvas(b.width, b.height), x = c.getContext("2d");
   x.drawImage(b, 0, 0);
@@ -50097,10 +50115,33 @@ var init_look = __esm(() => {
     grid[k] += l; cnt[k]++;
   }
   return { brightness: lum / n, saturation: sat / n, black: black / n, blown: blown / n, hues: Object.fromEntries(HUES.map((k, i) => [k, hue[i] / n])), grid: Array.from(grid, (v, i) => cnt[i] ? v / cnt[i] : 0) };
-})`, PIXELS_FN = Function(`return ${PIXELS}`)(), PASS_FN = Function(`return ${PASS}`)(), lastState = /* @__PURE__ */ new WeakMap, lastGrid = /* @__PURE__ */ new WeakMap, lastCanvas = /* @__PURE__ */ new WeakMap, lastHint = /* @__PURE__ */ new WeakMap, lastNumbers = /* @__PURE__ */ new WeakMap, lastFaults = /* @__PURE__ */ new WeakMap, CANVAS = `(() => { const h = window.__harness, c = h.canvas(), r = h.main()?.[1].renderer ?? h.renderers[0]; if (!c) return null;
+})`, PIXELS_FN = Function(`return ${PIXELS}`)(), PASS_FN = Function(`return ${PASS}`)(), SHRINK_FN = Function(`return async (b64, w, h) => {
+  const i = await createImageBitmap(${PNG_BLOB}(b64)), c = document.createElement("canvas"), x = c.getContext("2d");
+  c.width = w; c.height = h; x.imageSmoothingQuality = "high"; x.drawImage(i, 0, 0, w, h);
+  return c.toDataURL("image/png").split(",")[1]; }`)(), lastState = /* @__PURE__ */ new WeakMap, lastGrid = /* @__PURE__ */ new WeakMap, lastCanvas = /* @__PURE__ */ new WeakMap, lastHint = /* @__PURE__ */ new WeakMap, lastNumbers = /* @__PURE__ */ new WeakMap, lastFaults = /* @__PURE__ */ new WeakMap, CANVAS = `(() => { const h = window.__harness, c = h.canvas(), r = h.main()?.[1].renderer ?? h.renderers[0]; if (!c) return null;
   const b = c.getBoundingClientRect();
   return { buffer: [c.width, c.height], css: [Math.round(b.width), Math.round(b.height)], dpr: devicePixelRatio, ratio: r?.getPixelRatio?.() ?? null,
     frame: ${FRAME}, reduce: matchMedia("(prefers-reduced-motion: reduce)").matches }; })()`;
+  COMPOSE = `(async (shots, labels) => {
+  const imgs = await Promise.all(shots.map(s => createImageBitmap(${PNG_BLOB}(s))));
+  // up to 3 in one row (3 in a 2 × 2 grid left a black quarter), and each label in a strip above its picture, never over
+  // it (labels covered the game's own score: opinion-4, feel-3)
+  const cols = imgs.length <= 3 ? imgs.length : Math.ceil(Math.sqrt(imgs.length)), rows = Math.ceil(imgs.length / cols);
+  const w = Math.round(Math.max(...imgs.map(i => i.width)) / 2), h = Math.round(Math.max(...imgs.map(i => i.height)) / 2), c = document.createElement("canvas");
+  const fs = Math.max(12, Math.round(h / 22)), lh = fs + 12;
+  c.width = w * cols; c.height = (h + lh) * rows;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.font = fs + "px sans-serif"; ctx.textBaseline = "top";
+  imgs.forEach((img, i) => {
+    const x = (i % cols) * w, y = Math.floor(i / cols) * (h + lh);
+    const k = Math.min(w / img.width, h / img.height);
+    ctx.fillStyle = "#fff"; ctx.fillText(labels[i], x + 6, y + 6, w - 12);
+    ctx.drawImage(img, x + (w - img.width * k) / 2, y + lh + (h - img.height * k) / 2, img.width * k, img.height * k);
+  });
+  return c.toDataURL("image/png").split(",")[1];
+})`;
+  NOTELESS = /^Pixels: brightness \d+%, colour saturation \d+%, \d+% near black, \d+% blown out(; \d+% of the picture changed since the last look)?\.$/, FOLDED = /^Pixels(, Hues)?(, Stands out)?: as the last look/, CELL_PIXELS = /; pixels: brightness \d+%, colour saturation \d+%, \d+% near black, \d+% blown out$/, ACT_DROP = /^(HTML over the canvas|Subject|Stands out): |^This camera shows (little of the subject|the subject's parts hiding each other)/;
   PROBE = `(async (pt, url) => { ${VIEW}
   const c = r.domElement, rect = c.getBoundingClientRect(), persp = !!camera.isPerspectiveCamera;
   const gl = r.isWebGLRenderer || !r.backend?.isWebGPUBackend ? r.getContext?.() : null; // WebGPURenderer on its WebGL 2 backend too
@@ -52410,6 +52451,25 @@ function workOf(w2) {
     frames: w2.all.length
   };
 }
+function ratioInterval(base, variant) {
+  let stats = (x2) => {
+    let l = x2.map(Math.log), m = l.reduce((s, v2) => s + v2, 0) / l.length;
+    return { m, v: l.reduce((s, v2) => s + (v2 - m) ** 2, 0) / (l.length - 1) / l.length, n: l.length };
+  }, a2 = stats(base), b2 = stats(variant), ratio = Math.exp(b2.m - a2.m), se2 = a2.v + b2.v;
+  if (a2.n < 2 || b2.n < 2)
+    return { ratio, lo: 0, hi: 1 / 0 };
+  let df = se2 ** 2 / (a2.v ** 2 / (a2.n - 1) + b2.v ** 2 / (b2.n - 1)), half = (T95[Math.floor(df) - 1] ?? 1.96) * Math.sqrt(se2);
+  return { ratio, lo: Math.exp(b2.m - a2.m - half), hi: Math.exp(b2.m - a2.m + half) };
+}
+function compare(base, variant, work = !1) {
+  let r = ratioInterval(base, variant), mid = sortNum(base)[base.length >> 1], settled = decided(r, { width: DECIDED_WIDTH, floor: DECIDED_FLOOR }) || Math.max(r.hi - 1, 1 - r.lo) * mid <= STEP_MS2, pct = (x2) => {
+    let v2 = Math.round((x2 - 1) * 100);
+    return v2 < 0 ? `−${-v2}%` : `+${v2}%`;
+  }, runs2 = `${variant.length} run${variant.length > 1 ? "s" : ""}`;
+  if (settled && (r.lo > 1 || r.hi < 1) && Math.abs(r.ratio - 1) * mid > STEP_MS2)
+    return { settled, text: `${pct(r.ratio)} ${work ? "work " : ""}(${pct(r.lo)} to ${pct(r.hi)}) vs baseline over ${runs2}` };
+  return { settled, text: `no clear change${work ? " in work" : ""} (${Number.isFinite(r.hi) ? `${pct(r.lo)} to ${pct(r.hi)}, ` : "too few for an interval, "}${runs2})` };
+}
 async function sample(page, timeoutMs) {
   await page.evaluate("__perf.t = [], __perf.c = [], __perf.g = [], __perf.long = 0");
   for (let end = Date.now() + timeoutMs;Date.now() < end && !await page.evaluate(SETTLED); )
@@ -52734,7 +52794,7 @@ var PASSES = `(async () => {
     const n = h.frameNo, t = c.realNow(); await c.step(1); const s = c.realNow(); await h.sync();
     cpu.push(s - t); all.push(c.realNow() - t); drew.push(h.frameNo !== n);
   }
-  return { all, cpu, drew }; })()`, pacingBound = (median, workMs) => median > 12 && workMs < median / 2, round2 = (n) => Math.round(n * 100) / 100, pick = (sorted, q2) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q2))] ?? 0, sortNum = (a2) => [...a2].sort((x2, y) => x2 - y), SETTLE_FRAMES = 100, SETTLED, NO_FRAMES = `(() => { const c = __clock; return "clock " + (c.paused() ? "paused" : "running") + " at " + Math.round(c.now()) + " ms, "
+  return { all, cpu, drew }; })()`, pacingBound = (median, workMs) => median > 12 && workMs < median / 2, round2 = (n) => Math.round(n * 100) / 100, pick = (sorted, q2) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q2))] ?? 0, sortNum = (a2) => [...a2].sort((x2, y) => x2 - y), T95, decided = (r, { width, floor }) => (r.hi - r.lo) / 2 / r.ratio * 100 <= width || r.lo > 1 + floor / 100 || r.hi < 1 - floor / 100, RUN_S = 0.25, RUN_WARM_MS = 300, RUNS_FLOOR = 3, RUNS_CAP = 8, CALL_CAP_S = 45, DECIDED_WIDTH = 10, DECIDED_FLOOR = 5, STEP_MS2 = 0.1, SETTLE_FRAMES = 100, SETTLED, NO_FRAMES = `(() => { const c = __clock; return "clock " + (c.paused() ? "paused" : "running") + " at " + Math.round(c.now()) + " ms, "
   + c.scheduled() + " timers and frames ever scheduled, " + __perf.t.length + " stamps, page " + (document.hidden ? "hidden" : "visible")
   + ", " + __harness.renderers.length + " renderers"; })()`, PACE = `(() => { const raf = requestAnimationFrame.bind(window); let last = -1e9; __perf.paced = 0;
   window.requestAnimationFrame = cb => raf(function f(t) { if (t === last || t - last >= 16.6) { if (t !== last) __perf.paced++; last = t; cb(t); } else raf(f); }); })()`, MIME, side = (w2, h) => Math.round(Math.sqrt(w2 * h)), NETWORKS, FIRST_POLL = `(() => { const h = window.__harness; return h ? { now: Performance.prototype.now.call(performance), first: h.firstFrameAt ?? null,
@@ -52785,6 +52845,38 @@ var init_perf = __esm(() => {
     ".wasm"
   ]), DIM_EXTS = /* @__PURE__ */ new Set([".glb", ".usdz", ".png", ".jpg", ".jpeg", ".ktx2", ".webp"]);
   SKIP_DIRS2 = /* @__PURE__ */ new Set(["node_modules", "dist", "build", "paprika3d"]);
+  T95 = [
+    12.706,
+    4.303,
+    3.182,
+    2.776,
+    2.571,
+    2.447,
+    2.365,
+    2.306,
+    2.262,
+    2.228,
+    2.201,
+    2.179,
+    2.16,
+    2.145,
+    2.131,
+    2.12,
+    2.11,
+    2.101,
+    2.093,
+    2.086,
+    2.08,
+    2.074,
+    2.069,
+    2.064,
+    2.06,
+    2.056,
+    2.052,
+    2.048,
+    2.045,
+    2.042
+  ];
   SETTLED = `(() => { const p = __perf, n = p.t.length - 1, h = n >> 1;
   if (h < ${SETTLE_FRAMES}) return false;
   const med = (a, i, j) => a.slice(i, j).sort((x, y) => x - y)[(j - i) >> 1];
@@ -52949,7 +53041,7 @@ async function utilPage(chrome2) {
   return util3 = chrome2.then((b2) => b2.newPage()), util3;
 }
 async function inPage(a2) {
-  let img = (b64) => createImageBitmap(new Blob([Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))])), pic = await img(a2.pic), W2 = pic.width, H = pic.height, canvas = (w2, h) => {
+  let img = (b64) => createImageBitmap(new Blob([Uint8Array.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))])), pic = await img(a2.pic), W2 = pic.width, H = pic.height, canvas = (w2, h) => {
     let c = document.createElement("canvas");
     return c.width = w2, c.height = h, c;
   }, hex = (rgb) => "#" + rgb.map((v2) => v2.toString(16).padStart(2, "0")).join(""), reader = (b3) => {
@@ -52961,14 +53053,14 @@ async function inPage(a2) {
       let rgb = s.map((v2) => Math.round(v2 / (d.length / 4)));
       return { hex: hex(rgb), rgb };
     };
-  }, lk = a2.look ? await img(a2.look) : null, atPic = reader(pic), atPage = lk && reader(lk), samples = a2.sample.map(([x2, y]) => ({ x: x2, y, ...atPic(x2, y), ...atPage && { page: atPage(x2 * lk.width / W2, y * lk.height / H) } })), out, scale, compare = null, box2 = a2.crop ? [Math.max(0, a2.crop[0]), Math.max(0, a2.crop[1]), Math.min(W2, a2.crop[2]), Math.min(H, a2.crop[3])] : [0, 0, W2, H], [l, t, r, b2] = box2, cw = r - l, ch = b2 - t;
+  }, lk = a2.look ? await img(a2.look) : null, atPic = reader(pic), atPage = lk && reader(lk), samples = a2.sample.map(([x2, y]) => ({ x: x2, y, ...atPic(x2, y), ...atPage && { page: atPage(x2 * lk.width / W2, y * lk.height / H) } })), out, scale, compare2 = null, box2 = a2.crop ? [Math.max(0, a2.crop[0]), Math.max(0, a2.crop[1]), Math.min(W2, a2.crop[2]), Math.min(H, a2.crop[3])] : [0, 0, W2, H], [l, t, r, b2] = box2, cw = r - l, ch = b2 - t;
   if (cw <= 0 || ch <= 0)
-    return { W: W2, H, box: box2, scale: 0, outW: 0, outH: 0, samples, compare, jpeg: "" };
+    return { W: W2, H, box: box2, scale: 0, outW: 0, outH: 0, samples, compare: compare2, jpeg: "" };
   if (lk) {
     let sx = lk.width / W2, sy = lk.height / H, lb = [l * sx, t * sy, cw * sx, ch * sy], h = a2.crop ? Math.min(a2.panel, Math.round(960 * ch / cw)) : a2.panel, pw = Math.round(cw * h / ch), lw = Math.round(lb[2] * h / lb[3]), same = Math.abs(W2 / H - lk.width / lk.height) / (W2 / H) < 0.02;
     out = canvas(pw + lw + (same ? pw + 16 : 8), h + 18);
     let c = out.getContext("2d");
-    if (c.imageSmoothingEnabled = !a2.crop || h / ch < 2, c.fillStyle = "#222", c.fillRect(0, 0, out.width, out.height), c.drawImage(pic, l, t, cw, ch, 0, 18, pw, h), c.drawImage(lk, ...lb, pw + 8, 18, lw, h), c.fillStyle = "#fff", c.font = "13px sans-serif", c.fillText(`picture ${W2} × ${H}`, 4, 13), c.fillText(`page ${lk.width} × ${lk.height}`, pw + 12, 13), compare = { same, pageW: lk.width, pageH: lk.height, panel: h }, same) {
+    if (c.imageSmoothingEnabled = !a2.crop || h / ch < 2, c.fillStyle = "#222", c.fillRect(0, 0, out.width, out.height), c.drawImage(pic, l, t, cw, ch, 0, 18, pw, h), c.drawImage(lk, ...lb, pw + 8, 18, lw, h), c.fillStyle = "#fff", c.font = "13px sans-serif", c.fillText(`picture ${W2} × ${H}`, 4, 13), c.fillText(`page ${lk.width} × ${lk.height}`, pw + 12, 13), compare2 = { same, pageW: lk.width, pageH: lk.height, panel: h }, same) {
       let dc = canvas(pw, h), tc = dc.getContext("2d", { willReadFrequently: !0 });
       tc.imageSmoothingEnabled = c.imageSmoothingEnabled, tc.drawImage(pic, l, t, cw, ch, 0, 0, pw, h);
       let A = tc.getImageData(0, 0, pw, h).data;
@@ -52981,7 +53073,7 @@ async function inPage(a2) {
         else
           D2[j2] = D2[j2 + 1] = D2[j2 + 2] = g;
       }
-      tc.putImageData(B2, 0, 0), c.drawImage(dc, pw + lw + 16, 18), c.fillText("differences in red", pw + lw + 20, 13), compare.share = n / (pw * h), compare.cells = cells.map((v2, i) => v2 / cellN[i]);
+      tc.putImageData(B2, 0, 0), c.drawImage(dc, pw + lw + 16, 18), c.fillText("differences in red", pw + lw + 20, 13), compare2.share = n / (pw * h), compare2.cells = cells.map((v2, i) => v2 / cellN[i]);
     }
     scale = h / ch;
   } else {
@@ -53002,7 +53094,7 @@ async function inPage(a2) {
       }
     }
   }
-  return { W: W2, H, box: box2, scale: +scale.toFixed(2), outW: out.width, outH: out.height, samples, compare, jpeg: out.toDataURL("image/jpeg", 0.85).split(",")[1] };
+  return { W: W2, H, box: box2, scale: +scale.toFixed(2), outW: out.width, outH: out.height, samples, compare: compare2, jpeg: out.toDataURL("image/jpeg", 0.85).split(",")[1] };
 }
 function pictureFile(dir, f) {
   let file3 = typeof f === "string" && f ? resolve11(dir, f) : "";
@@ -61534,7 +61626,7 @@ function shrinkText(cwd, file3, s, target) {
 `);
 }
 var FORMAT2, EXT, TARGETS, mb = (bytes3) => +(bytes3 / 1048576).toFixed(2), texSide = (t, target) => target === "shopify" ? Math.max(t.w, t.h) : Math.round(Math.sqrt(t.w * t.h)), CONVERT = (rel) => `convert ${rel} to GLB (Blender's USD import, then its glTF export; or usd2gltf), which \`model_audit\` shrink can then make smaller.`, RESIZE = async (b64, cap2) => {
-  let blob = new Blob([Uint8Array.from(atob(b64), (c2) => c2.charCodeAt(0))]), full = await createImageBitmap(blob), k = cap2 / Math.max(full.width, full.height);
+  let blob = new Blob([Uint8Array.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), (c2) => c2.charCodeAt(0))]), full = await createImageBitmap(blob), k = cap2 / Math.max(full.width, full.height);
   if (k >= 1)
     return null;
   let w2 = Math.max(1, Math.round(full.width * k)), h = Math.max(1, Math.round(full.height * k)), img = await createImageBitmap(blob, { resizeWidth: w2, resizeHeight: h, resizeQuality: "high", colorSpaceConversion: "none", premultiplyAlpha: "none" }), c = document.createElement("canvas");
@@ -61819,11 +61911,11 @@ async function installed(client) {
   if (!FEEDBACK)
     return;
   try {
-    let f = join21(telemetryDir(), "pinged"), body = JSON.stringify({ ...base(), client: client.slice(0, 64) }), version = "0.3.0";
-    if (existsSync13(f) && readFileSync18(f, "utf8") === "0.3.0")
+    let f = join21(telemetryDir(), "pinged"), body = JSON.stringify({ ...base(), client: client.slice(0, 64) }), version = "0.3.1";
+    if (existsSync13(f) && readFileSync18(f, "utf8") === "0.3.1")
       return;
     if (await post("/install", body))
-      writeFileSync10(f, "0.3.0");
+      writeFileSync10(f, "0.3.1");
   } catch {}
 }
 function told() {
@@ -61837,7 +61929,7 @@ function stopEvent(asked) {
 `);
   } catch {}
 }
-var off, ON = !1, FEEDBACK, URL3 = "https://paprika3d-telemetry.paprika3d.workers.dev", KEY = "9cf6093e07a2c1cc94161e84dbdb59268440ff04d06b7be9", telemetryDir = () => join21(harnessHome(), "telemetry"), run2, KINDS3, id = "", base = () => ({ v: 1, at: (/* @__PURE__ */ new Date()).toISOString(), install: install2(), run: run2, version: "0.3.0", os: platform(), node: process.versions.node.split(".")[0] }), scrub = (s) => (s.split(`
+var off, ON = !1, FEEDBACK, URL3 = "https://paprika3d-telemetry.paprika3d.workers.dev", KEY = "9cf6093e07a2c1cc94161e84dbdb59268440ff04d06b7be9", telemetryDir = () => join21(harnessHome(), "telemetry"), run2, KINDS3, id = "", base = () => ({ v: 1, at: (/* @__PURE__ */ new Date()).toISOString(), install: install2(), run: run2, version: "0.3.1", os: platform(), node: process.versions.node.split(".")[0] }), scrub = (s) => (s.split(`
 `)[0] ?? "").replace(/[a-z]+:\/\/\S+/gi, "<url>").replace(/(?:[A-Za-z]:\\|~?\/)[^\s:'"`,)]+/g, "<path>").slice(0, 160), extra, last3 = null, post = (path14, body) => !URL3 ? Promise.resolve(!1) : fetch(URL3 + path14, { method: "POST", headers: { "content-type": "application/json", "x-paprika3d-key": KEY }, body, signal: AbortSignal.timeout(3000) }).then((r) => r.ok, () => !1), REPORT_TOOL, reports = 0, REPORT_ASK;
 var init_telemetry = __esm(() => {
   init_state();
@@ -61880,7 +61972,7 @@ async function drawSheet(pics, cell) {
   let c = document.createElement("canvas"), g = c.getContext("2d");
   c.width = cell * pics.length, c.height = cell, g.fillStyle = "#222", g.fillRect(0, 0, c.width, c.height);
   for (let i = 0;i < pics.length; i++) {
-    let x2 = i * cell, b64 = pics[i], img = b64 ? await createImageBitmap(new Blob([Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0))])).catch(() => null) : null;
+    let x2 = i * cell, b64 = pics[i], img = b64 ? await createImageBitmap(new Blob([Uint8Array.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0))])).catch(() => null) : null;
     if (img) {
       let k = Math.min((cell - 4) / img.width, (cell - 4) / img.height), w2 = img.width * k, h = img.height * k;
       g.drawImage(img, x2 + (cell - w2) / 2, (cell - h) / 2, w2, h);
@@ -62563,7 +62655,7 @@ async function mint(who) {
     client_version,
     model: who.model ?? null,
     os: platform2(),
-    plugin_version: "0.3.0"
+    plugin_version: "0.3.1"
   }, headers: invite ? { "x-paprika3d-invite": invite } : {} });
   if (!had)
     writePrivate(join23(configDir(), "install-id"), install3);
@@ -62629,7 +62721,7 @@ async function publish(cwd, who, opts = {}) {
   try {
     if (!key2)
       key2 = await mint(who), minted = !0;
-    let agent = { install: installId(), client: who.client === "unknown" ? null : who.client, model: who.model ?? null, plugin_version: "0.3.0" }, chosen = opts.slug ? { slug: opts.slug, kept: !0 } : slugFor(cwd, api3), slug2 = chosen.slug, s;
+    let agent = { install: installId(), client: who.client === "unknown" ? null : who.client, model: who.model ?? null, plugin_version: "0.3.1" }, chosen = opts.slug ? { slug: opts.slug, kept: !0 } : slugFor(cwd, api3), slug2 = chosen.slug, s;
     for (let tries = 0;!s; tries++)
       try {
         s = await call("/v1/publish", { json: { slug: slug2, files: manifest, agent }, secret: key2.secret });
@@ -62762,7 +62854,7 @@ function namedOr(cwd, c) {
 async function withPicture(g, r, file3) {
   try {
     let png = readFileSync21(file3).toString("base64"), data = await g.queue(() => g.page.evaluate(async (b64) => {
-      let i = await createImageBitmap(new Blob([Uint8Array.from(atob(b64), (c2) => c2.charCodeAt(0))], { type: "image/png" })), k = Math.min(1, 1024 / i.width), c = document.createElement("canvas");
+      let U2 = Uint8Array, i = await createImageBitmap(new Blob([U2.fromBase64?.(b64) ?? Uint8Array.from(atob(b64), (c2) => c2.charCodeAt(0))], { type: "image/png" })), k = Math.min(1, 1024 / i.width), c = document.createElement("canvas");
       return c.width = Math.round(i.width * k), c.height = Math.round(i.height * k), c.getContext("2d").drawImage(i, 0, 0, c.width, c.height), c.toDataURL("image/jpeg", 0.8).split(",")[1];
     }, png));
     return { ...r, content: [...r.content, { type: "image", data, mimeType: "image/jpeg" }] };
@@ -62799,19 +62891,23 @@ function projectSummary(dir) {
   let files = readdirSync8(dir).filter((f) => !["node_modules", "paprika3d", ".git", "bun.lock", "package-lock.json"].includes(f)), installed2 = ["three", "vite", "@react-three/fiber", "@dimforge/rapier3d-compat"].filter((p) => existsSync16(join24(dir, "node_modules", p)));
   return `Project folder holds: ${files.join(", ") || "nothing yet"}. Installed: ${installed2.join(", ") || "nothing (no node_modules)"}.`;
 }
+function loadedFrom(g, print) {
+  if (game === g)
+    loadedPrint = print;
+  for (let s of slots.values())
+    if (s.game === g)
+      s.loadedPrint = print;
+}
 async function reloadAfter(g, dir, print, opts) {
   let first2 = (e) => e.split(`
 `)[0], had = new Set(g.errors.map(first2)), ok = await g.reload().then(() => !0, () => !1);
+  if (ok)
+    owed.delete(g);
   if (opts.hook)
     hookReset.add(g);
   let now = opts.faults && ok ? await faultsNow(g).catch(() => null) : null, stale = fingerprint(dir) !== print;
-  if (ok && !stale) {
-    if (game === g)
-      loadedPrint = print;
-    for (let s of slots.values())
-      if (s.game === g)
-        s.loadedPrint = print;
-  }
+  if (ok && !stale)
+    loadedFrom(g, print);
   if (!now || g.errors.some((e) => !had.has(first2(e))))
     return { stale };
   let base2 = hookFaults.get(g), d = base2 && base2.frame === now.frame ? faultDiff(base2.lines, now.lines, now.partial) : null;
@@ -62825,10 +62921,18 @@ function runCheck(g, dir, opts = {}) {
       return noteRun(dir, print2, { ts: (/* @__PURE__ */ new Date()).toISOString(), kind: "check", passed: 0, failed: 0, durationMs: Date.now() - start, failing: after2?.stale ? void 0 : [] }), { passed: 0, failed: 0, outcomes: [], durationMs: Date.now() - start, fingerprint: print2, text: "", changed: !1, faults: after2?.faults };
     }
     let contract = loadContract(dir, tests ? TESTS : { ci: opts.ci }), print = fingerprints(dir, { assets: !0 }), key2 = [print.sources, print.assets, JSON.stringify(contract), JSON.stringify(g.config), !!opts.ci, tests].join("|"), memo = lastFull.get(g);
-    if (memo?.key === key2)
+    if (memo?.key === key2) {
+      if (owed.delete(g))
+        await g.reload();
       return { ...memo.r, changed: !1, text: `${memo.r.text}
 (these sources were already checked at ${memo.at}, by the after-edit hook or an earlier call, so this is that result)` };
-    let r = opts.result ?? await check(g, contract, { cwd: dir, print: print.sources, tests }), picture = r.outcomes.find((o) => o.picture)?.picture ?? g.runDir, after = !opts.result && opts.reload !== !1 ? await reloadAfter(g, dir, r.fingerprint, opts) : null, stale = after?.stale ?? fingerprint(dir) !== r.fingerprint, state = noteRun(dir, r.fingerprint, {
+    }
+    let r = opts.result ?? await check(g, contract, { cwd: dir, print: print.sources, tests }), picture = r.outcomes.find((o) => o.picture)?.picture ?? g.runDir, after = !opts.result && opts.reload !== !1 ? await reloadAfter(g, dir, r.fingerprint, opts) : null, stale = after?.stale ?? fingerprint(dir) !== r.fingerprint;
+    if (opts.reload === !1 && !opts.result) {
+      if (owed.add(g), !stale)
+        loadedFrom(g, r.fingerprint);
+    }
+    let state = noteRun(dir, r.fingerprint, {
       ts: (/* @__PURE__ */ new Date()).toISOString(),
       kind: "check",
       passed: r.passed,
@@ -62892,14 +62996,18 @@ async function startControl() {
     if (body.edit)
       mine.edit = body.edit;
     if (!p) {
-      let g = game2;
-      mine.result = guarded2(g.queue(() => {
+      let g = game2, run3 = calls.then(() => {
         if (waiting === mine)
           waiting = null;
-        if (g.page.isClosed() || !g.page.browser().connected)
-          throw Error("the game's page was closed after a call hung; the agent's next call opens it again");
-        return runCheck(g, cwd2, { edit: mine.edit, ci: mine.ci, tests: mine.tests, faults: mine.faults, hook: !0 });
-      }), "check", () => g);
+        return running = HOOK, guarded2(g.queue(() => {
+          if (g.page.isClosed() || !g.page.browser().connected)
+            throw Error("the game's page was closed after a call hung; the agent's next call opens it again");
+          return runCheck(g, cwd2, { edit: mine.edit, ci: mine.ci, tests: mine.tests, faults: mine.faults, hook: !0 });
+        }), "check", () => g).finally(() => {
+          running = null;
+        });
+      });
+      calls = run3.catch(() => {}), mine.result = run3;
     }
     try {
       let r = await mine.result;
@@ -62938,7 +63046,7 @@ function noteTest(g, l, keyFrames = 0, own = !0) {
     if (own && (!base2 || base2.frame === l.frame))
       hookFaults.set(g, { frame: l.frame, lines: faultDiff(base2?.lines ?? [], [...l.setup ?? [], ...l.surfaces ?? []], !!l.unchecked).kept });
   }
-  return l ? lookText(l) : "";
+  return l ? short("look", lookText(l)) : "";
 }
 function plainOf(l) {
   if (!l.ids)
@@ -62946,8 +63054,8 @@ function plainOf(l) {
   let s = l.subject && !("absent" in l.subject) ? { name: l.subject.name, share: l.subject.share } : null, hues = Object.entries(l.pixels?.objects?.hues ?? l.pixels?.hues ?? {}).sort((a2, b2) => b2[1] - a2[1]).slice(0, 3).filter(([, v2]) => v2 >= 0.05).map(([h, v2]) => `${h} ${Math.round(v2 * 100)}%`).join(", ");
   return { subject: s, hues, onScreen: l.onScreen.length };
 }
-async function guarded2(p, name, page2, long = LONG.has(name)) {
-  let limit = long ? 2 * LIMIT_MS : LIMIT_MS, start = Date.now(), bound = () => (long ? 2 : 1) * BOUND_MS * Math.min(4, Math.max(1, loadavg2()[0] / cpus3().length)), done = !1, heard = start, settled = p.then(() => {
+async function guarded2(p, name, page2, long = LONG.has(name), start = Date.now()) {
+  let limit = long ? 2 * LIMIT_MS : LIMIT_MS, bound = () => (long ? 2 : 1) * BOUND_MS * Math.min(4, Math.max(1, loadavg2()[0] / cpus3().length)), done = !1, heard = start, settled = p.then(() => {
     done = !0;
   }, () => {
     done = !0;
@@ -63064,7 +63172,7 @@ function call2(name, args) {
   let named2 = typeof args.game === "string" && args.game.trim() ? args.game.trim() : "main", slot = slotOf(named2), own = { width: slot.opened.size?.[0] ?? VIEWPORT.width, height: slot.opened.size?.[1] ?? VIEWPORT.height }, resized = slot.game?.resized, bad = checkArgs(name, args, slot.cwd, slot.game ? [own, ...resized ? [resized] : []] : []);
   if (bad)
     return Promise.resolve(fail(bad + REPORT_ASK));
-  let optimizing = name === "perf" && !!args.optimize, once3 = () => answer(name, (async () => {
+  let optimizing = name === "perf" && !!args.optimize, once3 = (start) => answer(name, (async () => {
     use(named2);
     let note = "", from2 = game ? told3.get(game) ?? game.errors.length : 0;
     if (name !== "open" && gone())
@@ -63073,10 +63181,12 @@ function call2(name, args) {
     else if (game && (FRESH.has(name) || name === "reference" && args.compare)) {
       let print = fingerprint(cwd);
       if (print !== loadedPrint)
-        await game.reload(), loadedPrint = print, note = reloaded(game.loadMs);
+        owed.delete(game), await game.reload(), loadedPrint = print, note = reloaded(game.loadMs);
       else if (hookReset.has(game) && name !== "feel")
         note = HOOK_RESET;
     }
+    if (game && !selfFresh(name, args) && owed.delete(game))
+      await game.reload();
     if (game)
       hookReset.delete(game);
     let r = await tool(args);
@@ -63088,29 +63198,29 @@ ${note.trimEnd()}`) : note + r.content[0].text };
     if (game)
       told3.set(game, game.errors.length);
     return r;
-  })(), () => game, LONG.has(name) || optimizing), arrived = Date.now(), before = running, run3 = calls.then(async () => {
+  })(), () => game, LONG.has(name) || optimizing, start), arrived = Date.now(), before = running, run3 = calls.then(async () => {
     let waited = Date.now() - arrived;
     running = name;
-    let r = await once3();
+    let start = Date.now(), r = await once3(start);
     if (r.isError && body(r).includes(NAVIGATED)) {
-      let again = await once3(), cause = /\n(Vite reloaded it|The dev server reloaded it)[^\n]*/.exec(body(r))?.[0].slice(1) ?? "";
+      let again = await once3(start), cause = /\n(Vite reloaded it|The dev server reloaded it)[^\n]*/.exec(body(r))?.[0].slice(1) ?? "";
       r = again.isError && body(again).includes(NAVIGATED) ? withText(again, body(again).replace(NAVIGATED, NAVIGATED_TWICE)) : again.isError ? again : withText(again, RERAN + (cause && `${cause}
 `) + body(again));
     }
     if (running = null, FEEDBACK && r.isError && REPORT_ASK && r.content[0]?.type === "text")
       r = withText(r, body(r) + REPORT_ASK);
     if (waited > 5000)
-      r = withText(r, `Waited ${Math.round(waited / 1000)} s for ${before ? `the \`${before}\` call` : "the calls"} before this one to finish (calls run one at a time).
+      r = withText(r, `Waited ${Math.round(waited / 1000)} s for ${before === HOOK ? "the after-edit hook's check of the saved checks" : before ? `the \`${before}\` call` : "the calls"} before this one to finish (calls run one at a time).
 ` + body(r));
     return r;
   });
   return calls = run3, run3;
 }
-function answer(name, p, page2, long) {
+function answer(name, p, page2, long, start) {
   let g0 = page2(), log2 = g0?.serverLog, from2 = (g0 && heard.get(g0)) ?? { length: 0 };
   if (g0)
     heard.set(g0, { length: g0.serverLog.length, last: g0.serverLog.at(-1) });
-  return guarded2(p, name, page2, long).catch(async (e) => {
+  return guarded2(p, name, page2, long, start).catch(async (e) => {
     let game2 = page2();
     if (e instanceof Hung)
       return fail(e.message);
@@ -63143,7 +63253,7 @@ ${said.join(`
 async function handle(method, params) {
   switch (method) {
     case "initialize":
-      return client = [params?.clientInfo?.name, params?.clientInfo?.version].filter(Boolean).join("/") || client, installed(client), { protocolVersion: params?.protocolVersion ?? "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "paprika3d", title: "paprika3d", version: "0.3.0" }, instructions: INSTRUCTIONS };
+      return client = [params?.clientInfo?.name, params?.clientInfo?.version].filter(Boolean).join("/") || client, installed(client), { protocolVersion: params?.protocolVersion ?? "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "paprika3d", title: "paprika3d", version: "0.3.1" }, instructions: INSTRUCTIONS };
     case "ping":
       return {};
     case "tools/list":
@@ -63203,7 +63313,7 @@ async function serve() {
   }
   await stop();
 }
-var MAX_CHARS = 15000, TAIL = 2500, WORK_IS = "paused frames, each timed from its step to the end of its GPU work, with no wait for the display", workText = (w2) => `${w2.ms} ms ${w2.drew ? `a frame that drew (the median of ${w2.drew})` : `a frame (the median of ${w2.frames}; none called three's render)`}, ${w2.cpuMs} ms of it the frame's code; ${w2.meanMs} ms a frame on average over ${w2.frames} stepped, the slowest ${w2.maxMs} ms`, PACED = "headless Chrome runs frames back to back only while each one draws something new, and a frame that presents nothing new waits for the 60 Hz tick (a render skipped, or a canvas not drawn to every frame).", saidGpu = "", text = (body) => ({ content: [{ type: "text", text: fit(body) }] }), fail = (body) => ({ ...text(body), isError: !0 }), log = (s) => console.error(`paprika3d: ${s}`), LEAN = !1, CONTRACT = !1, CWD, VIDEO = !1, RECORD, NETWORK, TOOLS, GAME, HIDDEN, LOOP_NOTES, LISTED, described, client = "unknown", game = null, cwd = "", control = null, shots = 0, chrome2, opened, loadedPrint = "", slots, current = "main", MAX_GAMES = 4, slotOf = (name) => current === name ? { game, cwd, opened } : slots.get(name) ?? { game: null, cwd: "", opened: {} }, mainGame = () => slotOf("main"), token, RUNTIME, BUNDLES, contractOrNull = (dir, ci = !1) => {
+var MAX_CHARS = 15000, TAIL = 2500, WORK_IS = "paused frames, each timed from its step to the end of its GPU work, with no wait for the display", workText = (w2) => `${w2.ms} ms ${w2.drew ? `a frame that drew (the median of ${w2.drew})` : `a frame (the median of ${w2.frames}; none called three's render)`}, ${w2.cpuMs} ms of it the frame's code; ${w2.meanMs} ms a frame on average over ${w2.frames} stepped, the slowest ${w2.maxMs} ms`, PACED = "headless Chrome runs frames back to back only while each one draws something new, and a frame that presents nothing new waits for the 60 Hz tick (a render skipped, or a canvas not drawn to every frame).", saidGpu = "", text = (body) => ({ content: [{ type: "text", text: fit(body) }] }), fail = (body) => ({ ...text(body), isError: !0 }), log = (s) => console.error(`paprika3d: ${s}`), LEAN = !1, SHORT2, short = (tool, t) => SHORT2 ? shortText(tool, t) : t, CONTRACT = !1, CWD, VIDEO = !1, RECORD, NETWORK, TOOLS, GAME, HIDDEN, LOOP_NOTES, LISTED, described, client = "unknown", game = null, cwd = "", control = null, shots = 0, chrome2, opened, loadedPrint = "", slots, current = "main", MAX_GAMES = 4, slotOf = (name) => current === name ? { game, cwd, opened } : slots.get(name) ?? { game: null, cwd: "", opened: {} }, mainGame = () => slotOf("main"), token, RUNTIME, BUNDLES, contractOrNull = (dir, ci = !1) => {
   if (!CONTRACT)
     return null;
   try {
@@ -63217,7 +63327,7 @@ var MAX_CHARS = 15000, TAIL = 2500, WORK_IS = "paused frames, each timed from it
   } catch {
     return null;
   }
-}, lastFull, hookReset, hookFaults, lookPrint, edited = (g) => lookPrint.has(g) && lookPrint.get(g) !== loadedPrint, waiting = null, netArg = (n) => {
+}, lastFull, hookReset, hookFaults, lookPrint, edited = (g) => lookPrint.has(g) && lookPrint.get(g) !== loadedPrint, owed, selfFresh = (name, a2) => name === "test" || name === "look" && !!(a2.sheet || a2.viewports || a2.scroll || a2.opening), waiting = null, netArg = (n) => {
   if (n !== void 0 && !Object.hasOwn(NETWORKS, String(n)))
     throw Error(`network: one of ${Object.keys(NETWORKS).join(", ")}`);
   return n;
@@ -63241,7 +63351,7 @@ Measured with the page's JavaScript slowed ${t}× (a weak laptop); the GPU was n
   } catch {
     return "Saved";
   }
-}, TOOL_FNS, INSTRUCTIONS = "Use these tools, the `paprika` server's, rather than a Playwright or Chrome DevTools script, to run, see, test, play or profile any three.js, React Three Fiber or other WebGL page, new or existing, in Chrome or Firefox: a game, a viewer, a product configurator, a simulation, a shader or post-processing demo. `open` runs the page in headless Chrome (by default) on a paused, seeded clock, so the same inputs always give the same frames and state; `look` shows what a viewer sees and lists what is on screen and what never appears (a model loaded at the wrong scale, out of view or not loaded at all shows only there). `look`'s `Lighting:` and `Surfaces:` lines name the object, where it is and the number that fixes it. Search for the tool by what you need: `look` to see the page, `interact` to play it, `observe` to read its state, `eval` to run code in it, `feel` to measure how an event reacts, `perf` to time it against a budget, `model_run` to build a model in code (three and Manifold, as in Blender) and `model_look` to see it from four sides, saved as a .glb the page loads, `asset_search` for a ready-made model (57,732, CC BY or CC0), PBR texture or HDRI sky from the hosted library. Calls run one at a time: a call made while another still runs, one moved to the background included, waits for it to finish, and its reply starts with how long it waited.", calls, running = null, FRESH, reloaded = (ms) => `Reloaded (sources changed), ran on the new code from frame 0 (ready in ${(ms / 1000).toFixed(1)} s).
+}, TOOL_FNS, INSTRUCTIONS = "Use these tools, the `paprika` server's, rather than a Playwright or Chrome DevTools script, to run, see, test, play or profile any three.js, React Three Fiber or other WebGL page, new or existing, in Chrome or Firefox: a game, a viewer, a product configurator, a simulation, a shader or post-processing demo. `open` runs the page in headless Chrome (by default) on a paused, seeded clock, so the same inputs always give the same frames and state; `look` shows what a viewer sees and lists what is on screen and what never appears (a model loaded at the wrong scale, out of view or not loaded at all shows only there). `look`'s `Lighting:` and `Surfaces:` lines name the object, where it is and the number that fixes it. Search for the tool by what you need: `look` to see the page, `interact` to play it, `observe` to read its state, `eval` to run code in it, `feel` to measure how an event reacts, `perf` to time it against a budget, `model_run` to build a model in code (three and Manifold, as in Blender) and `model_look` to see it from four sides, saved as a .glb the page loads, `asset_search` for a ready-made model (57,732, CC BY or CC0), PBR texture or HDRI sky from the hosted library. Calls run one at a time: a call made while another still runs, one moved to the background included, waits for it to finish, and its reply starts with how long it waited.", calls, running = null, HOOK = "after-edit hook", FRESH, reloaded = (ms) => `Reloaded (sources changed), ran on the new code from frame 0 (ready in ${(ms / 1000).toFixed(1)} s).
 `, HOOK_RESET = `The after-edit hook reran its checks since your last call, so the page restarted at frame 0.
 `, REOPENED = `Reopened first: the game's page had closed (a call before this one hung, or Chrome was killed or crashed), so the game was opened again and this ran from frame 0.
 `, newRun = () => `Run folder: ${game.runDir}`, gone = () => !!game && (game.page.isClosed() || !game.page.browser().connected), keyFramesOf = (steps = [], ran) => !steps.some((s) => ("key" in s) || ("mouse" in s) || ("touch" in s) || ("wheel" in s) || ("scroll" in s)) ? 0 : ran ?? steps.reduce((n, s) => n + Number(("wait" in s ? s.wait : ("frames" in s) ? s.frames : 1) ?? 1), 0), LIMIT_MS, BOUND_MS, LONG, Hung, hung = (name, what) => {
@@ -63277,7 +63387,7 @@ var init_server = __esm(() => {
   init_open();
   init_state();
   init_telemetry();
-  CWD = { type: "string", description: "The game project's folder." }, RECORD = `true: plays the steps in real time (1/60 s a frame, ${RECORD_MAX_S} s at most) into a GIF in the run folder; the reply has four moments and the real frame intervals.`, NETWORK = { type: "string", enum: ["slow-4g", "fast-4g", "3g"], description: "Also time a first visit on this network (Chrome DevTools' presets), in real time with no cache: when the first scene frame came, which bytes came before it by kind (as sent: the harness's own server does not compress, a CDN does) and when an overlay over the canvas went." }, TOOLS = [
+  SHORT2 = process.env.PAPRIKA3D_REPLY === "short", CWD = { type: "string", description: "The game project's folder." }, RECORD = `true: plays the steps in real time (1/60 s a frame, ${RECORD_MAX_S} s at most) into a GIF in the run folder; the reply has four moments and the real frame intervals.`, NETWORK = { type: "string", enum: ["slow-4g", "fast-4g", "3g"], description: "Also time a first visit on this network (Chrome DevTools' presets), in real time with no cache: when the first scene frame came, which bytes came before it by kind (as sent: the harness's own server does not compress, a CDN does) and when an overlay over the canvas went." }, TOOLS = [
     {
       name: "contract",
       description: "For a game with exact rules (scoring, collisions, matching, turn order, stated numbers) or when the user asks for a locked spec or tests, call it before writing game code: it turns the user's prompt into a game contract (keypoints the game must pass). It writes a brief for a fresh subagent that has seen no game code and tells you how to start it; that subagent drafts and issues the contract and replies with the keypoints. Never edit game-contract.json by hand.",
@@ -63459,7 +63569,7 @@ var init_server = __esm(() => {
   token = randomBytes(24).toString("hex");
   RUNTIME = resolve17(import.meta.dirname, "../runtime/dist/index.js");
   BUNDLES = ["geo/dist/geo.js", "fx/dist/fx.js"].map((f) => resolve17(import.meta.dirname, "..", f));
-  TESTS = { ci: !0, file: "game-tests.json" }, lastFull = /* @__PURE__ */ new WeakMap, hookReset = /* @__PURE__ */ new WeakSet, hookFaults = /* @__PURE__ */ new WeakMap, lookPrint = /* @__PURE__ */ new WeakMap;
+  TESTS = { ci: !0, file: "game-tests.json" }, lastFull = /* @__PURE__ */ new WeakMap, hookReset = /* @__PURE__ */ new WeakSet, hookFaults = /* @__PURE__ */ new WeakMap, lookPrint = /* @__PURE__ */ new WeakMap, owed = /* @__PURE__ */ new WeakSet;
   TOOL_FNS = {
     async contract(a2) {
       let dir = resolve17(a2.cwd), brief = join24(dir, "paprika3d", "contract-brief.md"), draft = join24(dir, "paprika3d", "contract-draft.json"), src = existsSync16(draft) ? readFileSync21(draft, "utf8") : null, raw = null;
@@ -63635,7 +63745,7 @@ Run folder: ${game.runDir}`);
 ${l2}` : "").join(""), strip = r.clip?.strip ?? r.video?.strip;
       if (!a2.look)
         return strip ? withPicture(g, text(body), strip) : text(body);
-      let start = Date.now(), l = await look(g, { edited: edited(g) }), lt = lookText(l);
+      let start = Date.now(), l = await look(g, { edited: edited(g), hint: !SHORT2 }), lt = short("interact", lookText(l));
       recordPlain("look", l.picture, Date.now() - start), noteTest(g, l);
       let both = await withPicture(g, text(`${body}
 ${lt}${strip ? `
@@ -63652,8 +63762,8 @@ The reply's pictures: look's after the steps, then the ${r.clip ? "clip" : "vide
       if (noteTest(g), a2.cameras) {
         let v2 = await cameras(g, cwd, a2.cameras.map((c) => typeof c === "string" ? { ...namedCam(cwd, c), label: c } : c));
         return recordPlain("look", v2.picture, Date.now() - start), withPicture(g, text(`Picture: ${v2.picture} (${v2.cells.length} cameras, left to right, top to bottom, at frame ${v2.cells[0].look.frame ?? 0}, no reload; the game's own camera is not moved)
-${sheetText(v2.cells).join(`
-`)}
+${short("look", sheetText(v2.cells).join(`
+`))}
 Each cell at full size: ${v2.cells.map((c) => `${c.label} ${basename5(c.look.picture)}`).join(", ")} (in the picture's folder).` + (v2.kept.length ? `
 Kept as \`camera\` names for look, zoom and reference compare: ${v2.kept.map((n) => JSON.stringify(n)).join(", ")} (paprika3d/cameras.json).` : "")), v2.picture);
       }
@@ -63670,10 +63780,10 @@ ${v2.cells.map((c) => c.text).join(`
 `)}`), v2.picture);
       }
       if (a2.sheet) {
-        let v2 = await sheet(g, a2.sheet), took = Date.now() - start;
-        return recordPlain("look", v2.picture, took), withPicture(g, text(`Picture: ${v2.picture} (${v2.labels.length} moments, left to right, top to bottom: ${v2.labels.join(" | ")}); the game is reloaded at its first frame
-${sheetText(v2.cells).join(`
-`)}${v2.missed.length ? `
+        let v2 = await sheet(g, a2.sheet, { reload: !1 }), took = Date.now() - start;
+        return owed.add(g), recordPlain("look", v2.picture, took), withPicture(g, text(`Picture: ${v2.picture} (${v2.labels.length} moments, left to right, top to bottom: ${v2.labels.join(" | ")}); the game is reloaded at its first frame
+${short("look", sheetText(v2.cells).join(`
+`))}${v2.missed.length ? `
 Did not finish: ${v2.missed.join(" | ")}; try fewer frames or steps for those` : ""}
 This sheet took ${Math.round(took / 1000)} s (about ${Math.round(took / 1000 / a2.sheet.length)} s a cell)${g.software ? " on a software renderer" : ""}.`), v2.picture);
       }
@@ -63737,30 +63847,60 @@ ${c.text}` : r.text);
 ${costsText(p2.costs, p2)}` : "", start = Date.now(), name = typeof a2.budget === "string" ? a2.budget : a2.budget ? "given" : contractOrNull(cwd)?.budget ? "contract" : "desktop", felt = (p2) => ({ frameMs: p2.work?.paced ? p2.work.ms : p2.median, assetMB: p2.assetMB, ...p2.firstFrame && { scriptMB: p2.firstFrame.scriptMB, firstSceneFrameMs: p2.firstFrame.ms ?? 1 / 0 } }), proxy = budget.proxy ? `
 Only the limits are a ${name === "quest" ? "headset" : "phone"}'s: the frame ran on this host's GPU, which is faster than a ${name === "quest" ? "headset" : "phone"}'s, so GPU work (shadows, post-processing, a high pixel ratio) costs more there than this says.` : "";
       if (a2.variants?.length) {
-        let variants = a2.variants.slice(0, 8), rows = [], home2 = g.page.url(), throttle = a2.throttle, base2 = await perf(g, budget, { url: home2, throttle, network, work: !0, costs: !!a2.costs }), paced = !!base2.work?.paced, cost = (p2) => paced ? p2.work?.ms ?? p2.median : p2.median, delta = (p2) => Math.abs(cost(p2) - cost(base2)) < 2 * base2.noiseMs ? `within the noise of the baseline${paced ? "'s work" : ""}` : `${cost(p2) <= cost(base2) ? "−" : "+"}${Math.abs(Math.round((cost(p2) - cost(base2)) / Math.max(cost(base2), 0.01) * 100))}% ${paced ? "work " : ""}vs baseline`, change = (n2, b2, what) => {
+        let throttle = a2.throttle, home2 = g.page.url(), short2 = { throttle, work: !0, seconds: RUN_S, warmMs: RUN_WARM_MS }, vs = a2.variants.slice(0, 8).map((v2, i) => ({
+          v: v2,
+          runs: [],
+          error: "",
+          settled: !1,
+          label: v2.label ?? ([v2.query !== void 0 && `?${v2.query.replace(/^\?/, "")}`, v2.hide?.length && `hide ${v2.hide.join(", ")}`, v2.pixelRatio && `pixel ratio ${v2.pixelRatio}`, v2.code && "code"].filter(Boolean).join(", ") || `variant ${i + 1}`)
+        })), first2 = await perf(g, budget, { ...short2, url: home2, network, costs: !!a2.costs }), bases = [first2], paced = !!first2.work?.paced, cost = (p2) => Math.max(0.01, paced ? p2.work?.ms ?? p2.median : p2.median), stats = (ps) => ps.map(cost), slowest = 0, timed = async (f) => {
+          let t = Date.now();
+          try {
+            return await f();
+          } finally {
+            slowest = Math.max(slowest, Date.now() - t);
+          }
+        }, room = () => Date.now() - start + 2 * slowest < CALL_CAP_S * 1000;
+        for (let round3 = 0;round3 < RUNS_CAP; round3++) {
+          let todo = vs.filter((x2) => !x2.settled && !x2.error);
+          if (!todo.length)
+            break;
+          let order = [null, ...todo];
+          for (let k = round3 ? 0 : 1;k < order.length; k++) {
+            if (!room())
+              break;
+            let x2 = order[(k + round3) % order.length];
+            if (!x2) {
+              bases.push(await timed(() => perf(g, budget, { ...short2, url: home2, overlayMs: stuck(first2) })));
+              continue;
+            }
+            try {
+              x2.runs.push(await timed(() => perf(g, budget, { ...short2, setup: variantSetup(x2.v), url: variantUrl(home2, x2.v), overlayMs: stuck(first2) })));
+            } catch (e) {
+              x2.error = e.message.split(`
+`)[0];
+            }
+          }
+          if (round3 + 1 >= RUNS_FLOOR)
+            for (let x2 of todo)
+              x2.settled = !!x2.runs.length && compare(stats(bases), stats(x2.runs)).settled;
+          if (!room())
+            break;
+        }
+        let nearest = (ps) => {
+          let m = stats(ps).sort((x2, y) => x2 - y)[ps.length >> 1];
+          return ps.reduce((b2, p2) => Math.abs(cost(p2) - m) < Math.abs(cost(b2) - m) ? p2 : b2);
+        }, near = nearest(bases), net = first2.overBudget.filter((k) => k === "scriptMB" || k === "firstSceneFrameMs"), base2 = near === first2 ? first2 : { ...near, firstFrame: first2.firstFrame, overlay: first2.overlay, costs: first2.costs, overBudget: [...near.overBudget, ...net] }, change = (n2, b2, what) => {
           let pct = Math.round((n2 - b2) / Math.max(b2, 1) * 100);
           return Math.abs(pct) > 2 ? `${pct < 0 ? "−" : "+"}${Math.abs(pct)}% ${what}` : "";
-        }, counts = (p2) => [change(p2.calls, base2.calls, "draw calls"), change(p2.triangles, base2.triangles, "triangles")].filter(Boolean).join(", "), line2 = (label, p2) => `${label}: ${p2.median} ms median (p95 ${p2.p95})${p2.work ? `, work ${p2.work.ms} ms` : ""}, ${p2.calls} draw calls, ${p2.triangles} triangles; ${p2 === base2 ? budgetText(p2.overBudget, budget, felt(p2), name) : [delta(p2), counts(p2)].filter(Boolean).join("; ")}`;
-        rows.push(line2("baseline", base2));
-        for (let [i, v2] of variants.entries()) {
-          let label = v2.label ?? ([v2.query !== void 0 && `?${v2.query.replace(/^\?/, "")}`, v2.hide?.length && `hide ${v2.hide.join(", ")}`, v2.pixelRatio && `pixel ratio ${v2.pixelRatio}`, v2.code && "code"].filter(Boolean).join(", ") || `variant ${i + 1}`), run3 = () => perf(g, budget, { setup: variantSetup(v2), url: variantUrl(home2, v2), throttle, work: !0, overlayMs: stuck(base2) }), off2 = (p2) => Math.abs(cost(p2) - cost(base2));
-          try {
-            let p2 = await run3();
-            if (off2(p2) > Math.max(3 * base2.noiseMs, cost(base2) / 4)) {
-              let q2 = await run3();
-              if (off2(q2) < off2(p2))
-                p2 = q2;
-            }
-            rows.push(line2(label, p2));
-          } catch (e) {
-            rows.push(`${label}: ${e.message.split(`
-`)[0]}`);
-          }
-        }
+        }, counts = (p2) => [change(p2.calls, base2.calls, "draw calls"), change(p2.triangles, base2.triangles, "triangles")].filter(Boolean).join(", "), line2 = (label, p2, verdict2) => `${label}: ${p2.median} ms median (p95 ${p2.p95})${p2.work ? `, work ${p2.work.ms} ms` : ""}, ${p2.calls} draw calls, ${p2.triangles} triangles; ${verdict2}`, rows = [
+          line2("baseline", base2, budgetText(base2.overBudget, budget, felt(base2), name)),
+          ...vs.map((x2) => x2.runs.length ? line2(x2.label, nearest(x2.runs), [compare(stats(bases), stats(x2.runs), paced).text, counts(nearest(x2.runs))].filter(Boolean).join("; ")) : `${x2.label}: ${x2.error || "not measured: the call reached its time limit first"}`)
+        ], bc = stats(bases), mean = bc.reduce((s, c) => s + c, 0) / bc.length, sd = Math.sqrt(bc.reduce((s, c) => s + (c - mean) ** 2, 0) / Math.max(1, bc.length - 1)), spread = `Baseline over ${bc.length} load${bc.length > 1 ? "s" : ""}: ${bc.sort((x2, y) => x2 - y)[bc.length >> 1]} ms median${paced ? " work" : ""}, runs spread ${Math.round(sd / mean * 100)}%.`;
         return await g.reload(void 0, home2), recordPlain("perf", await shot(g, "perf"), Date.now() - start, { perf: base2 }), text(`${rows.join(`
 `)}${slowed(throttle)}${proxy}
 Work: the median of the frames that drew, of ${WORK_IS}.${paced ? ` The baseline's ${base2.median} ms is pacing, not work, so each variant is compared on its work: ${PACED}` : ""}
-Noise between two samples of the baseline: ${base2.noiseMs} ms. ${loaded(base2)}
+${spread} ${loaded(base2)}
 ${hostLoad()} ${gpuLine2(g)}
 The page is reloaded as it was.${costs(base2)}`);
       }
@@ -63797,7 +63937,7 @@ ${passesText(p.passes)}` : ""}${costs(p)}`);
     },
     async test() {
       let g = need();
-      return text((await runCheck(g, cwd, { tests: !0 })).text);
+      return text((await runCheck(g, cwd, { tests: !0, reload: !1 })).text);
     },
     async model_audit(a2) {
       let dir = resolve17(a2.cwd);
@@ -63832,7 +63972,9 @@ ${passesText(p.passes)}` : ""}${costs(p)}`);
         if (!game)
           throw Error("reference: compare needs the page open: call `open` first, or leave compare out to read the picture alone");
         let cam = a2.camera ? namedOr(dir, a2.camera) : viewpoint(dir, file3);
-        kept = !a2.camera && !!cam, lookPng = (await (cam ? lookFrom(game, cam) : look(game))).picture;
+        kept = !a2.camera && !!cam;
+        let quiet = { peek: !0, surfaces: !1 };
+        lookPng = (await (cam ? lookFrom(game, cam, quiet) : look(game, quiet))).picture;
       }
       if (!(await chrome2?.catch(() => null))?.connected)
         chrome2 = launchChrome2();
@@ -63863,7 +64005,7 @@ ${passesText(p.passes)}` : ""}${costs(p)}`);
     let { publish: publish2 } = await Promise.resolve().then(() => (init_publish(), exports_publish));
     return text(await publish2(resolve17(a2.cwd), { client, model: a2.model }, { slug: a2.slug, rotate: a2.rotate === !0 }));
   };
-  LIMIT_MS = Number(process.env.PAPRIKA3D_CALL_LIMIT_MS) || 600000, BOUND_MS = Number(process.env.PAPRIKA3D_BOUND_MS) || 30000, LONG = /* @__PURE__ */ new Set(["open", "check", "contract"]);
+  LIMIT_MS = Number(process.env.PAPRIKA3D_CALL_LIMIT_MS) || 600000, BOUND_MS = Number(process.env.PAPRIKA3D_BOUND_MS) || 30000, LONG = /* @__PURE__ */ new Set(["open", "check", "contract", "test"]);
   Hung = class Hung extends Error {
   };
   told3 = /* @__PURE__ */ new WeakMap, OWN_ERRORS = /* @__PURE__ */ new Set(["open", "observe", "interact", "eval", "check", "invariants", "test", "contract", "asset_search", "model_audit", "model_run", "model_look", "publish"]);
@@ -64142,7 +64284,7 @@ ${verdict2 || "(no reply)"}
   return writeFileSync14(join25(dir, "REPORT.md"), text2 + `
 `), { iterations, best, text: text2 };
 }
-var PLUGIN_TOOL = "mcp__plugin_paprika3d_paprika__", ALLOWED, NO_PUBLISH, JUDGE_DISALLOWED, NO_PLUGIN, GRACE_MS = 300000, EXIT_MS = 1e4, ROOT, HOOK, SETTINGS = (plugin) => JSON.stringify({ ...plugin ? {} : NO_PLUGIN, hooks: { PostToolUse: [{ hooks: [{ type: "command", command: `test -f "\${CLAUDE_PROJECT_DIR:-.}/paprika-loop/.revision" && exec ${HOOK} || true`, timeout: 5 }] }] } }), BUILDER_PROMPT = (n, left, first2, changed, flat = "") => `This is session ${n} of a loop that builds the request in paprika-loop/PROMPT.md; about ${left} minutes of the loop are left, and this session does as many of the improvements as fit in it. First read paprika-loop/LATEST.md (the last builder's section and the last judge's verdict; PROGRESS.md holds every session's, for history) and run \`git log --oneline -5\`. ${first2 ? "Nothing is built yet: write the page whole and as impressive as you can make it from the request, risks welcome, then run and polish it with the tools." : `The latest "Judge" section's Next list is the judge's three next improvements; the tools show what each change did.`}${changed ? " paprika-loop/PROMPT.md changed since the last session: LATEST.md shows the changed lines, and the Judge's Next list was written before them." : ""}${flat} Then append a section \`## Iteration ${n}\` to paprika-loop/PROGRESS.md with four short parts: Did, Saw (the look's numbers and fault lines), Next, Open. Write it while you still have room, then stop: no summary.`, JUDGE_PROMPT = (n) => `You judge session ${n} of a loop that builds the request in paprika-loop/PROMPT.md. Read it and paprika-loop/LATEST.md (PROGRESS.md holds every session's section), open the page with the \`open\` tool and judge it as your instructions say. Reply with a section the next builder will read: the scores from 1 to 10, one line each with the evidence in the page's own object names; then "Next:" and the three improvements your instructions ask for, concrete enough to start on (each checked against the last Iteration's Did and Open: what was done there is not asked again, and what its Open records as found nothing or impossible needs a different way); then, on its own last line, \`SCORE: n\` with the mean to one decimal.`, VERDICT_PROMPT = "Your turns are up. Write the verdict now from what you saw: the score lines, Next, and `SCORE: n` on the last line.", SCORE_LINE, VERDICT_END, EMPTY_TREE = (cwd2) => spawnSync4("git", ["hash-object", "-t", "tree", "--stdin"], { cwd: cwd2, input: "", encoding: "utf8" }).stdout.trim(), lines2 = (s) => s.split(`
+var PLUGIN_TOOL = "mcp__plugin_paprika3d_paprika__", ALLOWED, NO_PUBLISH, JUDGE_DISALLOWED, NO_PLUGIN, GRACE_MS = 300000, EXIT_MS = 1e4, ROOT, HOOK2, SETTINGS = (plugin) => JSON.stringify({ ...plugin ? {} : NO_PLUGIN, hooks: { PostToolUse: [{ hooks: [{ type: "command", command: `test -f "\${CLAUDE_PROJECT_DIR:-.}/paprika-loop/.revision" && exec ${HOOK2} || true`, timeout: 5 }] }] } }), BUILDER_PROMPT = (n, left, first2, changed, flat = "") => `This is session ${n} of a loop that builds the request in paprika-loop/PROMPT.md; about ${left} minutes of the loop are left, and this session does as many of the improvements as fit in it. First read paprika-loop/LATEST.md (the last builder's section and the last judge's verdict; PROGRESS.md holds every session's, for history) and run \`git log --oneline -5\`. ${first2 ? "Nothing is built yet: write the page whole and as impressive as you can make it from the request, risks welcome, then run and polish it with the tools." : `The latest "Judge" section's Next list is the judge's three next improvements; the tools show what each change did.`}${changed ? " paprika-loop/PROMPT.md changed since the last session: LATEST.md shows the changed lines, and the Judge's Next list was written before them." : ""}${flat} Then append a section \`## Iteration ${n}\` to paprika-loop/PROGRESS.md with four short parts: Did, Saw (the look's numbers and fault lines), Next, Open. Write it while you still have room, then stop: no summary.`, JUDGE_PROMPT = (n) => `You judge session ${n} of a loop that builds the request in paprika-loop/PROMPT.md. Read it and paprika-loop/LATEST.md (PROGRESS.md holds every session's section), open the page with the \`open\` tool and judge it as your instructions say. Reply with a section the next builder will read: the scores from 1 to 10, one line each with the evidence in the page's own object names; then "Next:" and the three improvements your instructions ask for, concrete enough to start on (each checked against the last Iteration's Did and Open: what was done there is not asked again, and what its Open records as found nothing or impossible needs a different way); then, on its own last line, \`SCORE: n\` with the mean to one decimal.`, VERDICT_PROMPT = "Your turns are up. Write the verdict now from what you saw: the score lines, Next, and `SCORE: n` on the last line.", SCORE_LINE, VERDICT_END, EMPTY_TREE = (cwd2) => spawnSync4("git", ["hash-object", "-t", "tree", "--stdin"], { cwd: cwd2, input: "", encoding: "utf8" }).stdout.trim(), lines2 = (s) => s.split(`
 `).map((l) => l.trimEnd()).filter(Boolean), briefKey = (s) => createHash8("sha1").update(lines2(s).join(`
 `)).digest("hex").slice(0, 12), sum = (usage2 = {}) => Object.values(usage2).reduce((n, u) => n + (u.inputTokens ?? 0) + (u.outputTokens ?? 0) + (u.cacheReadInputTokens ?? 0) + (u.cacheCreationInputTokens ?? 0), 0), git = (cwd2, ...args) => {
   let r = spawnSync4("git", args, { cwd: cwd2, encoding: "utf8" });
@@ -64154,7 +64296,7 @@ var PLUGIN_TOOL = "mcp__plugin_paprika3d_paprika__", ALLOWED, NO_PUBLISH, JUDGE_
 `), renameSync3(`${file3}.tmp`, file3);
 };
 var init_loop = __esm(() => {
-  ALLOWED = `Bash,Edit,Write,Read,Glob,Grep,${PLUGIN_TOOL}*`, NO_PUBLISH = `${PLUGIN_TOOL}publish`, JUDGE_DISALLOWED = `Edit,Write,NotebookEdit,Bash,${NO_PUBLISH}`, NO_PLUGIN = { enabledPlugins: { "paprika3d@paprika3d": !1, "paprika3d@paprika3d-dev": !1 } }, ROOT = join25(import.meta.dirname, ".."), HOOK = existsSync17(join25(ROOT, "hooks", "revision.js")) ? `node '${join25(ROOT, "hooks", "revision.js")}'` : `bun run '${join25(ROOT, "hooks", "revision.ts")}'`, SCORE_LINE = /^[\s*_`]*SCORE:\**\s*(\d+(?:\.\d+)?)/m, VERDICT_END = /^[\s*_`]*SCORE:\**\s*\d+(?:\.\d+)?(?:\s*\/\s*10)?[\s*_`.]*$/;
+  ALLOWED = `Bash,Edit,Write,Read,Glob,Grep,${PLUGIN_TOOL}*`, NO_PUBLISH = `${PLUGIN_TOOL}publish`, JUDGE_DISALLOWED = `Edit,Write,NotebookEdit,Bash,${NO_PUBLISH}`, NO_PLUGIN = { enabledPlugins: { "paprika3d@paprika3d": !1, "paprika3d@paprika3d-dev": !1 } }, ROOT = join25(import.meta.dirname, ".."), HOOK2 = existsSync17(join25(ROOT, "hooks", "revision.js")) ? `node '${join25(ROOT, "hooks", "revision.js")}'` : `bun run '${join25(ROOT, "hooks", "revision.ts")}'`, SCORE_LINE = /^[\s*_`]*SCORE:\**\s*(\d+(?:\.\d+)?)/m, VERDICT_END = /^[\s*_`]*SCORE:\**\s*\d+(?:\.\d+)?(?:\s*\/\s*10)?[\s*_`.]*$/;
 });
 
 import { existsSync as existsSync18, readFileSync as readFileSync23 } from "fs";

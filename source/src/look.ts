@@ -127,11 +127,14 @@ const DRAW = `(() => { const h = window.__harness, saved = new Map();
 
 // In the page, for PIXELS (the frame) and PASS (the objects): hue buckets at the colours' names (yellow 45-70°, green 70-165°: even
 // 45° bands put pure yellow in orange and yellow-green grass in yellow, opinion-5, opinion-6); grey is saturation under 25% or brightness under 10%.
+// Runs in the page: a PNG's bytes from its base64, natively where the browser can (Chrome 140, Firefox 133). A data: URL
+// fetch echoed the whole picture over CDP in Network events, and a per-character callback costs tens of ms a picture.
+const PNG_BLOB = `(s => new Blob([Uint8Array.fromBase64?.(s) ?? Uint8Array.from(atob(s), c => c.charCodeAt(0))], { type: "image/png" }))`;
 const HUE = `const HUES = ["red", "orange", "yellow", "green", "cyan", "blue", "violet", "magenta", "grey"];
   const bucket = (r, g, b, hi, lo, l, sa) => { if (sa < 0.25 || l < 0.1) return 8; const k = hi - lo, h = hi === r ? ((g - b) / k + 6) % 6 : hi === g ? (b - r) / k + 2 : (r - g) / k + 4; const d = h * 60; return d < 15 || d >= 345 ? 0 : d < 45 ? 1 : d < 70 ? 2 : d < 165 ? 3 : d < 200 ? 4 : d < 260 ? 5 : d < 290 ? 6 : 7; };`;
 
 // Runs in the page with the fallback three URL. window.__harnessLook keeps the material between looks of one page load.
-const PASS = `(async (url, shot) => { ${HUE}
+const PASS = `(async (url, shot, cell) => { ${HUE}
   ${VIEW} const L = window.__harnessLook ??= {};
   // a mesh seen through: transparent below half opacity, or transparent without writing depth (an additive beam)
   L.see = o => { const m = [o.material].flat()[0]; return !!(o.isMesh && m?.transparent && m.opacity < 0.5); };
@@ -258,7 +261,7 @@ const PASS = `(async (url, shot) => { ${HUE}
   const rect = r.domElement.getBoundingClientRect();
   // The screenshot (CSS pixels, the whole page) scaled onto the drawing buffer, rows top-down, so pixel t matches buf's.
   // shot is null when PIXELS already decoded this look's screenshot and left it in window.__harnessShot
-  const sc = new OffscreenCanvas(w, ht), sx = sc.getContext("2d"), bm = shot ? await createImageBitmap(await (await fetch("data:image/png;base64," + shot)).blob()) : window.__harnessShot;
+  const sc = new OffscreenCanvas(w, ht), sx = sc.getContext("2d"), bm = shot ? await createImageBitmap(${PNG_BLOB}(shot)) : window.__harnessShot;
   delete window.__harnessShot;
   sx.drawImage(bm, rect.left, rect.top, rect.width, rect.height, 0, 0, w, ht);
   const sd = sx.getImageData(0, 0, w, ht).data;
@@ -380,7 +383,7 @@ const PASS = `(async (url, shot) => { ${HUE}
   // Depth: whether far objects come out lighter and paler than near ones, by each object's box centre from the camera.
   // shortcut: each instance is its own object and numbered names stay apart (as coverage counts them); group them if one big instanced field skews the thirds.
   let depth = null;
-  if (Box3) {
+  if (Box3 && !cell) {
     const eye = camera.getWorldPosition(camera.position.clone()), v = eye.clone(), M = camera.matrixWorld.clone(), at = [];
     for (const [id, [k]] of seen) {
       const o = objs[owner[id]], g = o?.geometry;
@@ -403,7 +406,7 @@ const PASS = `(async (url, shot) => { ${HUE}
   // repeats (the highest autocorrelation peak of its high-passed brightness at 8 to 128 px, after the first dip below
   // zero), which a tiling texture shows. A sky dome (BackSide) is left out: it is meant to be smooth.
   let surface = null;
-  try {
+  if (!cell) try {
     const t0 = __clock.realNow(), area = new Map();
     for (const [id, [k]] of seen) {
       const o = objs[owner[id]];
@@ -527,7 +530,7 @@ const PASS = `(async (url, shot) => { ${HUE}
       if (y > 0 && at(x, y - 1) !== me) { m[6]++; m[7] += Math.abs(lum(t) - lum(t - w * 4)); }
     }
     const f = (v) => +v.toFixed(3);
-    if (m[0] && m[3]) subj.contrast = { bright: [f(m[1] / m[0]), f(m[4] / m[3])], sat: [f(m[2] / m[0]), f(m[5] / m[3])], edge: f(m[6] ? m[7] / m[6] : 0) };
+    if (m[0] && m[3] && !cell) subj.contrast = { bright: [f(m[1] / m[0]), f(m[4] / m[3])], sat: [f(m[2] / m[0]), f(m[5] / m[3])], edge: f(m[6] ? m[7] / m[6] : 0) };
   }
   // for __harness.seam(): whether no object is drawn at page point x, y (GL rows run bottom-up)
   L.free = (x, y) => { const i = Math.floor((x - rect.left) / rect.width * w), j = ht - 1 - Math.floor((y - rect.top) / rect.height * ht), s = (j * w + i) * 4;
@@ -538,7 +541,7 @@ const PASS = `(async (url, shot) => { ${HUE}
   // coin's or the player's colour (#178, opinion-12): the hues of everything else, with that object's name
   const big = first.filter(id => id < next && objs[owner[id]]).sort((a, b) => cnt[b] - cnt[a])[0], others = big === undefined ? 0 : O[0] - cnt[big];
   if (objects && cnt[big] > w * ht / 2 && others) { const o = objs[owner[big]]; objects.rest = { name: named(o) || o.type, share: +(others / (w * ht)).toPrecision(2), hues: Object.fromEntries(HUES.map((k, i) => [k, r3((O[4 + i] - H[9 * big + i]) / others)])) }; }
-  return { png: c.toDataURL("image/png").split(",")[1], pixels: w * ht, entries, objects, edge: V[0] / (w * ht) > 0.02 && V[5] > w / 2 ? [V[0] / (w * ht), V[1], V[2], V[3], V[4]] : null, names: [...names], seen: [...seenNames], missing: [...missing], subject: subj, depth, surface,
+  return { png: cell ? "" : c.toDataURL("image/png").split(",")[1], pixels: w * ht, entries, objects, edge: V[0] / (w * ht) > 0.02 && V[5] > w / 2 ? [V[0] / (w * ht), V[1], V[2], V[3], V[4]] : null, names: [...names], seen: [...seenNames], missing: [...missing], subject: subj, depth, surface,
     rect: [rect.left, rect.top, rect.width / w, rect.height / ht] };
 })`;
 
@@ -639,9 +642,9 @@ async function keepSeed<T>(game: Game, fn: () => Promise<T>): Promise<T> {
 }
 
 /** SETUP's and COPLANAR's lines on the page as it is now. COPLANAR's "Surfaces: not checked for N of M meshes" note is not
-    a fault: the Stop hook, faultsSame and closed read only its fight lines. */
-async function pageFaults(page: HarnessPage, known?: Known) {
-  const all = await page.evaluate(SETUP).catch(() => []) as string[], coplanar = await page.evaluate(COPLANAR).catch(() => []) as string[];
+    a fault: the Stop hook, faultsSame and closed read only its fight lines. `fights` false skips COPLANAR. */
+async function pageFaults(page: HarnessPage, known?: Known, fights = true) {
+  const all = await page.evaluate(SETUP).catch(() => []) as string[], coplanar = fights ? await page.evaluate(COPLANAR).catch(() => []) as string[] : [];
   const hidden: string[] = [], keep = (l: string) => { const k = known?.line(l); if (k) hidden.push(k); return !k; };
   const note = (l: string) => l.startsWith("Surfaces: not checked"), setup = all.filter(keep), surfaces = coplanar.filter(l => !note(l) && keep(l));
   return { setup, surfaces, unchecked: coplanar.filter(note), hidden };
@@ -666,11 +669,13 @@ async function knownOf(page: HarnessPage): Promise<Known> {
   };
 }
 
-// edited: the sources changed since the last look (the caller reloaded the page for them), so a fault line gone since can be closed
-export function look(game: Game, { moved = false, peek = false, edited = false }: { moved?: boolean; peek?: boolean; edited?: boolean } = {}): Promise<Look> {
+// edited: the sources changed since the last look (the caller reloaded the page for them), so a fault line gone since can be closed.
+// For grid cells, whose reply never prints Surfaces lines: `surfaces` false skips the z-fighting check (up to 21% of a sheet)
+// and the ID pass's parts no cell line prints (Surface, Depth, Stands out, the look-N-ids.png picture, which is not written), and `probed` carries the resize probe's answer across the cells' reloads of one page (resizeProbe)
+export function look(game: Game, { moved = false, peek = false, edited = false, hint = true, surfaces: fights = true, probed }: { moved?: boolean; peek?: boolean; edited?: boolean; hint?: boolean; surfaces?: boolean; probed?: Probed } = {}): Promise<Look> {
   return game.queue(() => keepSeed(game, async () => {
     const { page } = game;
-    const resized = await resizeProbe(game);
+    const resized = await resizeProbe(game, probed);
     // `moved`: a camera moved for this picture, which only a redraw shows.
     await page.evaluate(FIRST);
     // offscreen: the last frame's top-level calls all drew into render targets after the game had drawn to the screen, so
@@ -711,13 +716,13 @@ export function look(game: Game, { moved = false, peek = false, edited = false }
     // Only a solid colour counts: covers() says "an image" for an opaque gradient and a see-through vignette PNG alike
     const veil = covers.find(c => c.over >= 0.9 && c.opacity >= 0.95 && /^rgb\(/.test(c.background ?? ""));
     // the PNG goes as an argument, not pasted into the code (puppeteer scans every code string), and only when PIXELS failed
-    const r = await page.evaluate(PASS_FN, threeUrl(game, revision, webgpu), st ? null : png) as
+    const r = await page.evaluate(PASS_FN, threeUrl(game, revision, webgpu), st ? null : png, !fights) as
       { png: string; pixels: number; objects: Pixels["objects"] | null; edge: number[] | null; entries: [string, number, number, number, number, number, boolean, [number, number, OnScreen["runs"] | null] | null][]; names: string[]; seen: string[]; missing: [string, Where][]; rect: [number, number, number, number]; depth: Look["depth"] | null; surface: Look["surface"] | null;
         subject: (Omit<Subject, "share" | "bbox"> & { n: number; box: [number, number, number, number] | null }) | { name: string; absent: true } | null };
-    writeFileSync(ids, Buffer.from(r.png, "base64"));
+    if (r.png) writeFileSync(ids, Buffer.from(r.png, "base64"));
     if (veil) { r.surface = null; r.depth = null; r.objects = null; if (r.subject && !("absent" in r.subject)) delete r.subject.contrast; }
     if (pixels && r.objects) pixels.objects = r.objects;
-    const { setup, surfaces, unchecked, hidden } = await pageFaults(page, known);
+    const { setup, surfaces, unchecked, hidden } = await pageFaults(page, known, fights);
     const surfaceKnown = r.surface ? surfaceText(r.surface).map(known.line).find(Boolean) : undefined;
     if (surfaceKnown) r.surface = null;
     // compared by faultKey: a caster count or a share that moved is the same fault (gpu-4x4-7 kart: the
@@ -751,7 +756,7 @@ export function look(game: Game, { moved = false, peek = false, edited = false }
     // purpose, and a chase camera moving between "little" and "hiding" got it again every few looks (1c17107f)
     if (subject && !("absent" in subject) && hintOf(subject)) {
       const said = lastHint.get(game) ?? new Set<string>();
-      if (said.has(subject.name)) (subject as Subject).hintSaid = true; else if (!peek) lastHint.set(game, said.add(subject.name));
+      if (said.has(subject.name)) (subject as Subject).hintSaid = true; else if (!peek && hint) lastHint.set(game, said.add(subject.name));
     }
     const kept: Record<string, number> = {};
     for (const k of [...hidden, surfaceKnown, canvasKnown, ...knownNames]) if (k) kept[k] = (kept[k] ?? 0) + 1;
@@ -785,10 +790,10 @@ export function faultsNow(game: Game): Promise<{ lines: string[]; frame: number;
 /** look() from another place for this picture only: a copy of the camera that last drew the main scene, at `position`
     and facing `lookAt` (or the camera's own way), drawn in its place. The game's own camera is never moved, so a game that
     sets it every frame cannot undo the view (AA-3D air-hockey: "the harness's custom camera gets overridden"). */
-export function lookFrom(game: Game, cam: Cam): Promise<Look> {
+export function lookFrom(game: Game, cam: Cam, { surfaces = true, peek = false } = {}): Promise<Look> {
   return game.queue(() => keepSeed(game, async () => {
     const restore = await placeCam(game, cam);
-    try { return await look(game, { moved: true }); }
+    try { return await look(game, { moved: true, surfaces, peek }); }
     finally { await restore(); }
   }));
 }
@@ -803,7 +808,7 @@ export function cameras(game: Game, cwd: string, cams: (Cam & { label?: string }
     try {
       for (const c of cams) {
         // `left` is dropped: between two angles of one moment, nothing left the view
-        const { left, ...l } = await lookFrom(game, c);
+        const { left, ...l } = await lookFrom(game, c, { surfaces: false }); // sheetText prints no Surfaces lines
         cells.push({ label: c.label ?? `[${c.position.join(", ")}]${c.lookAt ? ` at [${c.lookAt.join(", ")}]` : ""}`, look: l });
       }
     } finally { lastFaults.delete(game); lastHint.set(game, said); lastNumbers.delete(game); } // as a sheet
@@ -877,7 +882,7 @@ export function views(game: Game, name: string): Promise<{ picture: string; size
 // The screenshot's pixel statistics, decoded in the page: AA-3D agents without the plugin wrote scripts for them (bright.py,
 // motion.mjs, a blank-frame detector) to catch black frames, a pale picture and whether anything moves.
 const PIXELS = `(async (b64) => {
-  const b = await createImageBitmap(await (await fetch("data:image/png;base64," + b64)).blob()), W = 80, H = 50;
+  const b = await createImageBitmap(${PNG_BLOB}(b64)), W = 80, H = 50;
   window.__harnessShot?.close?.(); window.__harnessShot = b; // PASS draws from it instead of decoding the PNG again
   const c = new OffscreenCanvas(b.width, b.height), x = c.getContext("2d");
   x.drawImage(b, 0, 0);
@@ -896,6 +901,11 @@ const PIXELS = `(async (b64) => {
 })`;
 // as functions, so page.evaluate takes the PNG as an argument
 const PIXELS_FN = new Function(`return ${PIXELS}`)(), PASS_FN = new Function(`return ${PASS}`)();
+// screenshot()'s scaling to CSS pixels: an Image from a data: URL went through the Network domain, as a fetch of one did
+const SHRINK_FN = new Function(`return async (b64, w, h) => {
+  const i = await createImageBitmap(${PNG_BLOB}(b64)), c = document.createElement("canvas"), x = c.getContext("2d");
+  c.width = w; c.height = h; x.imageSmoothingQuality = "high"; x.drawImage(i, 0, 0, w, h);
+  return c.toDataURL("image/png").split(",")[1]; }`)();
 const lastState = new WeakMap<Game, string | null>(), lastGrid = new WeakMap<Game, { grid: number[]; frame: number }>(), lastCanvas = new WeakMap<Game, string>(), lastHint = new WeakMap<Game, Set<string>>();
 const lastNumbers = new WeakMap<Game, ReturnType<typeof numbersOf>>();
 /** The last look's fault lines' faultKeys joined, the lines the next look's closed ones are read against (faultDiff's
@@ -918,15 +928,14 @@ const CANVAS = `(() => { const h = window.__harness, c = h.canvas(), r = h.main(
 async function screenshot(page: HarnessPage, path?: string): Promise<Uint8Array> {
   const v = page.viewport(), dpr = v?.deviceScaleFactor ?? 1;
   if (!v || dpr === 1) return page.screenshot({ path });
-  const png = Buffer.from(await page.evaluate(`(async (b64) => {
-    const i = new Image(); i.src = "data:image/png;base64," + b64; await i.decode();
-    const c = document.createElement("canvas"), x = c.getContext("2d");
-    c.width = ${v.width}; c.height = ${v.height}; x.imageSmoothingQuality = "high"; x.drawImage(i, 0, 0, c.width, c.height);
-    return c.toDataURL("image/png").split(",")[1]; })(${JSON.stringify(await page.screenshot({ encoding: "base64" }))})`) as string, "base64");
+  const png = Buffer.from(await page.evaluate(SHRINK_FN, await page.screenshot({ encoding: "base64" }), v.width, v.height) as string, "base64");
   if (path) writeFileSync(path, png);
   return png;
 }
 
+/** The resize probe's answers by viewport, for the cells of one grid: each cell reloads the same page, so a later cell at a
+    size already probed takes that answer instead of 120 ms of probing (the cases that skip the probe still skip it). */
+type Probed = Map<string, Canvas["resized"]>;
 /** Whether the canvas follows the page's size: once a page load, the page is made 10% narrower and 20% lower and put
     back, on real time (the resize event comes with Chrome's next rendering update) and no frame stepped. A resize clears
     the canvas, so it is tried before a look's redraw, and not on a game that already drew a frame in passes, which no
@@ -934,11 +943,13 @@ async function screenshot(page: HarnessPage, path?: string): Promise<Uint8Array>
     shape (or under object-fit contain), so CSS scales a fixed buffer, not a missing handler (#138: a 960x720 tape format
     read "resize handler did not run" on every look). Both sides shrink, so a handler sized from either one changes the
     buffer, and by different shares, so a window-filling canvas under CSS 100% changes shape and is still caught. */
-async function resizeProbe(game: Game): Promise<Canvas["resized"]> {
+async function resizeProbe(game: Game, probed?: Probed): Promise<Canvas["resized"]> {
   const { page } = game, v = page.viewport();
   const at = await page.evaluate(`(() => { const h = __harness, c = h.canvas();
     return !c ? null : h.resized ?? (h.main()?.[1].screen && h.frame.some(e => e.target) ? null : [c.width, c.height, scrollX, scrollY]); })()`) as Canvas["resized"] | number[];
   if (!Array.isArray(at) || !v) return at as Canvas["resized"];
+  const key = JSON.stringify(v), was = probed?.get(key);
+  if (was !== undefined) { await page.evaluate(`__harness.resized = ${JSON.stringify(was)}`); return was; }
   // `afterEvent`: ends 100 ms after the page's resize event, not 500 ms after the resize: a handler changes the canvas with
   // the event (plain three) or 15 ms after it (R3F's ResizeObserver), and a page with none waited out all 500 ms on its first look
   const until = (cond: string, afterEvent = false) => page.evaluate(`(async () => {
@@ -957,6 +968,7 @@ async function resizeProbe(game: Game): Promise<Canvas["resized"]> {
   await page.evaluate(`scrollTo({ left: ${at[2]}, top: ${at[3]}, behavior: "instant" })`); // the smaller page clamped or anchored a scrolled one
   const resized = fixed ? "fixed" : ran;
   await page.evaluate(`__harness.resized = ${JSON.stringify(resized)}`);
+  probed?.set(key, resized);
   return resized;
 }
 
@@ -1164,7 +1176,7 @@ export const SHEET_MAX = 9;
 // Runs in the page: lays the screenshots out in a grid of cells half the largest's size, each picture fitted into its
 // cell and labelled in its corner.
 export const COMPOSE = `(async (shots, labels) => {
-  const imgs = await Promise.all(shots.map(s => createImageBitmap(new Blob([Uint8Array.from(atob(s), c => c.charCodeAt(0))], { type: "image/png" }))));
+  const imgs = await Promise.all(shots.map(s => createImageBitmap(${PNG_BLOB}(s))));
   // up to 3 in one row (3 in a 2 × 2 grid left a black quarter), and each label in a strip above its picture, never over
   // it (labels covered the game's own score: opinion-4, feel-3)
   const cols = imgs.length <= 3 ? imgs.length : Math.ceil(Math.sqrt(imgs.length)), rows = Math.ceil(imgs.length / cols);
@@ -1186,11 +1198,12 @@ export const COMPOSE = `(async (shots, labels) => {
 /** Saves `look-<n>-sheet.png`: up to SHEET_MAX moments of the game in one grid, each from a freshly reloaded page, so
     stages, levels or states set through setState (a camera the game exposes too) are compared in one picture instead of
     a screenshot script of the agent's own (two AA-3D cells built one). A moment past puppeteer's 180 s, or not started
-    after 8 min, is left out and named in `missed`. Leaves the game reloaded at its first frame. */
-export function sheet(game: Game, items: SheetItem[]): Promise<{ picture: string; labels: string[]; missed: string[]; cells: { label: string; look: Look }[] }> {
+    after 8 min, is left out and named in `missed`. Leaves the game reloaded at its first frame, or with `reload` false at
+    its last moment, for the server to reload before the next call that needs frame 0. */
+export function sheet(game: Game, items: SheetItem[], { reload = true } = {}): Promise<{ picture: string; labels: string[]; missed: string[]; cells: { label: string; look: Look }[] }> {
   return game.queue(async () => {
     if (!items.length || items.length > SHEET_MAX) throw new Error(`look: a sheet takes 1 to ${SHEET_MAX} moments`);
-    const shots: string[] = [], labels: string[] = [], missed: string[] = [], cells: { label: string; look: Look }[] = [], start = Date.now(), said = new Set(lastHint.get(game));
+    const shots: string[] = [], labels: string[] = [], missed: string[] = [], cells: { label: string; look: Look }[] = [], start = Date.now(), said = new Set(lastHint.get(game)), probed: Probed = new Map();
     let failed: unknown;
     for (const [i, it] of items.entries()) {
       const label = it.label ?? (it.state ? JSON.stringify(it.state).slice(0, 60) : String(i + 1));
@@ -1204,7 +1217,7 @@ export function sheet(game: Game, items: SheetItem[]): Promise<{ picture: string
         // at least one frame, so the state is drawn; ten per evaluate, as act() steps them
         for (let left = Math.max(1, Math.floor(it.frames ?? 1)); left > 0; left -= 10) await game.page.evaluate(`__clock.step(${Math.min(left, 10)})`);
         // a look, not a bare screenshot, so each moment gets its lines (sheet returned a picture and nothing else: opinion-3, opinion-4)
-        const l = await look(game);
+        const l = await look(game, { surfaces: false, probed }); // sheetText prints no Surfaces lines
         shots.push(readFileSync(l.picture).toString("base64"));
         labels.push(label); cells.push({ label, look: l });
       } catch (e) {
@@ -1213,7 +1226,7 @@ export function sheet(game: Game, items: SheetItem[]): Promise<{ picture: string
       }
     }
     if (!shots.length) throw failed;
-    await game.reload();
+    if (reload) await game.reload();
     // only their Lighting lines are in the reply, so the next look prints its fault lines in full; their camera hints are not either,
     // so the hint said before the sheet stays the one said (a sheet cleared it and the hint repeated: build-review-1, #80)
     lastFaults.delete(game); lastHint.set(game, said); lastNumbers.delete(game);
@@ -1245,7 +1258,7 @@ export function viewports(game: Game, items: (string | number[])[]): Promise<{ p
       for (const [i, v] of sizes.entries()) {
         await game.page.setViewport({ ...own, ...v });
         await game.reload();
-        cells.push({ label: `${typeof items[i] === "string" ? `${items[i]} ` : ""}${v.width}x${v.height}@${v.deviceScaleFactor}`, look: await look(game) });
+        cells.push({ label: `${typeof items[i] === "string" ? `${items[i]} ` : ""}${v.width}x${v.height}@${v.deviceScaleFactor}`, look: await look(game, { surfaces: false }) }); // viewportsText prints no Surfaces lines; each size gets its own resize probe
       }
     } finally {
       await game.page.setViewport(own);
@@ -1274,6 +1287,39 @@ export function sheetText(cells: { label: string; look: Look }[]): string[] {
   });
 }
 
+// The short reply (PAPRIKA3D_REPLY=short, plan .planning/plans/reply-trim-2026-10-28.md T6): the lines the replay eval found
+// agents do not act on (docs/optimize-log.md, "2026-10-29: which reply lines agents use"), cut from the finished text, so
+// bench/replay cuts a recorded reply with this same function. Pixels and Hues only with a pixel note, the folded line never
+// (it comes only when no note fires), a sheet cell's pixels clause only with a note, On screen at 20 entries; an interact's
+// look also without On screen, HTML over the canvas, Subject, Stands out and the camera hint.
+const NOTELESS = /^Pixels: brightness \d+%, colour saturation \d+%, \d+% near black, \d+% blown out(; \d+% of the picture changed since the last look)?\.$/;
+const FOLDED = /^Pixels(, Hues)?(, Stands out)?: as the last look/, CELL_PIXELS = /; pixels: brightness \d+%, colour saturation \d+%, \d+% near black, \d+% blown out$/;
+const ACT_DROP = /^(HTML over the canvas|Subject|Stands out): |^This camera shows (little of the subject|the subject's parts hiding each other)/;
+const SHORT_ON_SCREEN = 20;
+/** A look's or interact's reply text as the short reply prints it; an interact's lines before its look are left as they are. */
+export function shortText(tool: "look" | "interact", text: string): string {
+  const lines = text.split("\n"), out: string[] = [];
+  let look = tool === "look";
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    look ||= line.startsWith("Picture: ");
+    if (!look) { out.push(line); continue; }
+    if (FOLDED.test(line)) continue;
+    if (NOTELESS.test(line)) { if (lines[i + 1]?.startsWith("Hues: ")) i++; continue; }
+    if (tool === "interact" && ACT_DROP.test(line)) continue;
+    if (/^On screen \(\d+\):$/.test(line)) { // its entries run to the Never visible line lookText always prints after them
+      let end = i + 1;
+      while (end < lines.length && !lines[end]!.startsWith("Never visible: ")) end++;
+      const all = lines.slice(i + 1, end), tail = /^… (\d+) more$/.exec(all.at(-1) ?? ""), items = tail ? all.slice(0, -1) : all;
+      if (tool === "look") out.push(line, ...items.length > SHORT_ON_SCREEN ? [...items.slice(0, SHORT_ON_SCREEN), `… ${items.length - SHORT_ON_SCREEN + Number(tail?.[1] ?? 0)} more`] : all);
+      i = end - 1;
+      continue;
+    }
+    out.push(line.replace(CELL_PIXELS, ""));
+  }
+  return out.join("\n");
+}
+
 /** One line per viewports cell: its label, the subject's share, how many objects are on screen and which ones another
     cell shows that this one does not, and its Canvas line. */
 export function viewportsText(cells: { label: string; look: Look }[]): string[] {
@@ -1295,12 +1341,12 @@ export function scrollSweep(game: Game, stops: number[]): Promise<{ picture: str
   return game.queue(async () => {
     if (!Array.isArray(stops) || !stops.length || stops.length > SHEET_MAX || !stops.every(p => typeof p === "number" && p >= 0 && p <= 1))
       throw new Error(`look: scroll takes 1 to ${SHEET_MAX} stops from 0 to 1, as in [0, 0.25, 0.5, 0.75, 1]`);
-    const cells: { label: string; text: string; look: Look }[] = [], said = new Set(lastHint.get(game));
+    const cells: { label: string; text: string; look: Look }[] = [], said = new Set(lastHint.get(game)), probed: Probed = new Map();
     try {
       for (const p of stops) {
         await game.reload();
         const at = (await play(game, [{ scroll: { progress: p } }]))!.split("; ")[0]!.replace("Scroll: ", "");
-        const l = await look(game), cam = await game.page.evaluate(`(() => { const c = __harness.main()?.[1].camera, e = c?.matrixWorld.elements, r = n => +n.toFixed(2);
+        const l = await look(game, { surfaces: false, probed }), cam = await game.page.evaluate(`(() => { const c = __harness.main()?.[1].camera, e = c?.matrixWorld.elements, r = n => +n.toFixed(2);
           if (!e) return null; const k = Math.hypot(e[8], e[9], e[10]) || 1; return [[e[12], e[13], e[14]].map(r), [-e[8] / k, -e[9] / k, -e[10] / k].map(r)]; })()`) as [number[], number[]] | null;
         const view = cam ? `camera [${cam[0].join(", ")}] looking along [${cam[1].join(", ")}]` : "no three.js camera", names = group(l.onScreen).map(g => g.name);
         cells.push({ label: `${Math.round(p * 100)}%: ${view}`, look: l,
